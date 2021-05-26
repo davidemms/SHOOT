@@ -3,7 +3,7 @@ import sys
 sys.path.append("/home/emms/workspace/p4/trunk/DeepTreePrototype/")
 
 
-class TreeSearcher(object):
+class TreeGrafter(object):
     """
     Places a gene within a gene tree
     """

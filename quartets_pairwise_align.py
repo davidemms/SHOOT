@@ -1,3 +1,5 @@
+import Bio.SeqIO
+
 import quartets
 
 
@@ -9,9 +11,7 @@ class PairwiseAlignQuartets(quartets.Quartets):
             iog - the OG to search in
             infn - FASTA filename containing the gene sequence
         """
-        self.d_db = d_db
-        self.iog = iog
-        self.infn = infn
+        super().__init__(d_db, iog, infn)
 
 
     def quartet(self, xyz):
@@ -21,7 +21,10 @@ class PairwiseAlignQuartets(quartets.Quartets):
             xyz - list of 3 gene IDs for genes x,y & z
         Returns:
             i_sister - sister gene: 0,1 or 2
+        Implementation:
+        Align all pairs, return 
         """
+
         raise NotImplemented()
 
 
