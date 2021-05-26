@@ -5,7 +5,7 @@ sys.path.append("/home/emms/workspace/p4/trunk/OrthoFinder-Accelerate/")
 import fol
 
 
-class OG_Assigner(object):
+class OGAssigner(object):
     """
     Assign a sequence to an orthogroup
     """
@@ -20,7 +20,7 @@ class OG_Assigner(object):
         raise NotImplemented()
 
 
-class OG_Assign_D(object):
+class OGAssignDIAMOND(OGAssigner):
     """
     Assign using DIAMOND
     """
