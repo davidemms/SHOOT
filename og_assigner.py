@@ -74,6 +74,16 @@ class OGAssignDIAMOND(OGAssigner):
         scores = [i for i, j in sortedTuples]
         ogs = [j for i, j in sortedTuples]
         c = Counter(ogs[:5])
+        # Easy cases
+        if len(c) == 0:
+            # no match
+            return -1, False
+        elif len(c) == 1:
+            # unique match
+            og, _ = c.most_common(1)[0]
+            return int(og), True
+        
+        # Otherwise, decide between the cases
         a, b = c.most_common(2)
         if a[1] > 2:
             og = a[0]
