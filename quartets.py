@@ -1,21 +1,22 @@
 import sys
 import Bio.SeqIO
 
-sys.path.append("/home/emms/workspace/p4/trunk/DeepTreePrototype/")
+import database
 
 
 class Quartets(object):
-    def __init__(self, d_db, iog, infn):
+    def __init__(self, d_db, iog, fn_query):
         """
         Args:
             d_db - Database directory
             iog - the OG to search in
-            infn - FASTA filename containing the gene sequence
+            fn_query - FASTA filename containing the gene sequence
         """
-        self.d_db = d_db
+        self.db = database.Database(d_db)
         self.iog = iog
-        self.infn = infn
-        self.seqs, self.taxa_list, self.taxa_lookup = self.read_seqs(infn)
+        self.fn_query = fn_query
+        fn_og_fasta = self.db.fn_seqs(iog)
+        self.seqs, self.taxa_list, self.taxa_lookup = self.read_seqs(fn_query, fn_og_fasta)
 
 
     @staticmethod

@@ -26,8 +26,7 @@ def main(d_db, infn, q_msa):
         # This doesn't feel right, iog is fixed in the constructor of quart and hence
         # in the constructor of search, and yet is passed as a variable here.
         # search.place_gene(iog)              
-        # search.place_gene() 
-        raise NotImplementedError("Not implemented")  
+        search.place_gene() 
 
     print("Tree: %s" % fn_tree)           
 

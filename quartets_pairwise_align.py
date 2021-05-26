@@ -24,7 +24,7 @@ class PairwiseAlignQuartets(quartets.Quartets):
         Implementation:
         Align all pairs, return 
         """
-
+        
         raise NotImplemented()
 
 

@@ -16,7 +16,7 @@ class MSAGrafter(object):
         """
         self.db = database.Database(d_db)
 
-    def add_gene(self, iog, infn):
+    def add_gene(self, iog, infn, method="iqtree"):
         """
         Args:
             iog - the OG to search in
@@ -24,14 +24,25 @@ class MSAGrafter(object):
         """
         fn_msa_orig = self.db.fn_msa(iog)
         fn_msa_new = infn + ".msa.fa"
-        fn_tree_new = infn + ".msa.tre"
 
         # print("mafft --quiet --add %s %s > %s" % (infn, fn_msa_orig, fn_msa_new))
         subprocess.call("mafft --quiet --add %s %s > %s" % (infn, fn_msa_orig, fn_msa_new), shell=True)
         print(fn_msa_new)
-        # print("FastTree -quiet %s > %s" % (fn_msa_new, fn_tree_new))
-        subprocess.call("FastTree -quiet %s > %s" % (fn_msa_new, fn_tree_new), shell=True)
-        print(fn_tree_new)
+        if method == "iqtree":
+            fn_tree_orig = self.db.fn_tree(iog)
+            t = ete3.Tree(fn_tree_orig)
+            t.unroot()
+            fn_unrooted = fn_tree_orig + ".un.tre"
+            t.write(outfile=fn_unrooted)
+            subprocess.call("iqtree -quiet -g %s -s %s" % (fn_unrooted, fn_msa_new), shell=True)
+            fn_tree_new = fn_msa_new + ".treefile"
+        elif method == "fasttree":
+            fn_tree_new = infn + ".msa.tre"
+            # print("FastTree -quiet %s > %s" % (fn_msa_new, fn_tree_new))
+            subprocess.call("FastTree -quiet %s > %s" % (fn_msa_new, fn_tree_new), shell=True)
+            print(fn_tree_new)
+        else:
+            raise NotImplementedError("Unknown method: %s" % method)
         # Root the tree as it was previously rooted
         fn_tree = self.db.fn_tree(iog)
         t_orig = ete3.Tree(fn_tree)

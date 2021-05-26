@@ -15,4 +15,9 @@ class Database(object):
         return self.d_db + "MultipleSequenceAlignments/OG%07d.fa" % iog
 
     def fn_tree(self, iog):
-        return self.d_db + "Gene_Trees/OG%07d_tree.txt" % iog
+        # return self.d_db + "Gene_Trees/OG%07d_tree.txt" % iog
+        return self.d_db + "Gene_Trees/OG%07d_tree.unrooted.tre" % iog
+        
+
+    def fn_seqs(self, iog):
+        return self.d_db + "Orthogroup_Sequences/OG%07d.fa" % iog
