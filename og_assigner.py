@@ -1,7 +1,5 @@
 import sys
 
-# for the time being, import the code I wrote to assign a gene to its orthogroup
-sys.path.append("/home/emms/workspace/p4/trunk/OrthoFinder-Accelerate/")
 import fol
 
 
@@ -37,4 +35,4 @@ class OGAssignDIAMOND(OGAssigner):
         """
         iog, q_tree = fol.assign_to_orthogroup(infn, infn, self.d_db)
 
-    return iog, q_tree
+        return iog, q_tree

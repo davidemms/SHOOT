@@ -2,8 +2,8 @@ import sys
 import argparse
 
 import og_assigner
-import tree_searcher
-import quartets_pairwise_align
+# import tree_searcher
+# import quartets_pairwise_align
 
 
 def main(d_db, infn):
@@ -12,13 +12,15 @@ def main(d_db, infn):
     if not q_tree:
         print("No tree, analysis complete")
         return
+    else:
+        print("Gene assigned to OG%07d" % iog)
 
-    quart = quartets_pairwise_align.PairwiseAlignQuartets(d_db, iog, infn)
-    search = tree_searcher.TreeSearcher(quart, d_db)
+    # quart = quartets_pairwise_align.PairwiseAlignQuartets(d_db, iog, infn)
+    # search = tree_searcher.TreeSearcher(quart, d_db)
 
     # This doesn't feel right, iog is fixed in the constructor of quart and hence
     # in the constructor of search, and yet is passed as a variable here.
-    search.place_gene(iog)              
+    # search.place_gene(iog)              
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
