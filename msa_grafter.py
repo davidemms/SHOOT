@@ -34,7 +34,7 @@ class MSAGrafter(object):
             t.unroot()
             fn_unrooted = fn_tree_orig + ".un.tre"
             t.write(outfile=fn_unrooted)
-            subprocess.call("iqtree -quiet -m LG -redo -g %s -s %s" % (fn_unrooted, fn_msa_new), shell=True)
+            subprocess.call("iqtree -quiet -m LG -alrt 1000 -redo -g %s -s %s" % (fn_unrooted, fn_msa_new), shell=True)
             fn_tree_new = fn_msa_new + ".treefile"
         elif method == "fasttree":
             fn_tree_new = infn + ".msa.tre"
@@ -53,7 +53,13 @@ class MSAGrafter(object):
         if method == "iqtree":
             outgroup_names = self.iqtree_names_adjust(outgroup_names)
         print(outgroup_names)
-        t_new = ete3.Tree(fn_tree_new)
+        t_new = ete3.Tree(fn_tree_new, format=1)
+        for n in t_new.traverse():
+            if not n.is_leaf() and n.name != "":
+                try:
+                    n.support = n.name.split("/")[1]
+                except:
+                    pass
         if not self.check_monophyly(t_new, outgroup_names):
             # find the largest set that is monophyletic
             # inexact method, add genes until fails

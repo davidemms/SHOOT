@@ -7,7 +7,7 @@ import msa_grafter
 import quartets_pairwise_align
 
 
-def main(d_db, infn, q_msa):
+def main(d_db, infn, q_msa, q_print=False):
     og_assign = og_assigner.OGAssignDIAMOND(d_db)
     iog, q_tree = og_assign.assign(infn)
     if not q_tree:
@@ -28,12 +28,17 @@ def main(d_db, infn, q_msa):
         # search.place_gene(iog)              
         search.place_gene() 
 
-    print("Tree: %s" % fn_tree)           
+    print("Tree: %s" % fn_tree)   
+    if q_print:
+        with open(fn_tree, 'r') as infile:
+            print(next(infile))
+    return fn_tree        
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("infile", help= "Input FASTA filename of the query sequence")
     parser.add_argument("db", help= "Database directory, prepared by fol_create_dp.py")
     parser.add_argument("-m", "--msa", action="store_true", help= "Use an MSA tree")
+    parser.add_argument("-p", "--print_tree", action="store_true", help= "Print tree as final line")
     args = parser.parse_args()
-    main(args.db, args.infile, args.msa)
+    main(args.db, args.infile, args.msa, args.print_tree)
