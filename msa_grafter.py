@@ -34,7 +34,7 @@ class MSAGrafter(object):
             t.unroot()
             fn_unrooted = fn_tree_orig + ".un.tre"
             t.write(outfile=fn_unrooted)
-            subprocess.call("iqtree -quiet -m LG -alrt 1000 -redo -g %s -s %s" % (fn_unrooted, fn_msa_new), shell=True)
+            subprocess.call("iqtree -quiet -m LG -fast -redo -g %s -s %s" % (fn_unrooted, fn_msa_new), shell=True)
             fn_tree_new = fn_msa_new + ".treefile"
         elif method == "fasttree":
             fn_tree_new = infn + ".msa.tre"
