@@ -81,7 +81,9 @@ class OGAssignDIAMOND(OGAssigner):
         elif len(c) == 1:
             # unique match
             og, _ = c.most_common(1)[0]
-            return int(og), True
+            if og.startswith("x"):
+                og = og[1:]   # indicates 3 or fewer genes
+            return int(og), False
         
         # Otherwise, decide between the cases
         a, b = c.most_common(2)
@@ -97,6 +99,6 @@ class OGAssignDIAMOND(OGAssigner):
             # all scored 1, get the highest scoring
             og = next(r for r in ogs if (r == a[0] or r == b[0]))
         if og.startswith("x"):
-            return int(og[:1]), False
+            return int(og[1:]), False
         else:
             return int(og), True

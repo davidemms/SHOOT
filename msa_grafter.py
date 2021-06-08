@@ -2,6 +2,7 @@
 Add the new sequence to an existing MSA and then infer the tree from that. If possible
 use the original tree as a start point - but not sure if I've got anything that can do this.
 """
+import os
 import ete3
 import subprocess
 
@@ -16,19 +17,24 @@ class MSAGrafter(object):
         """
         self.db = database.Database(d_db)
 
-    def add_gene(self, iog, infn, method="iqtree"):
+    def add_gene(self, iog, infn, method = "iqtree"):
         """
         Args:
             iog - the OG to search in
             infn - FASTA filename containing the gene sequence
         """
+        warn_string = ""
         fn_msa_orig = self.db.fn_msa(iog)
+        if not os.path.exists(fn_msa_orig):
+            fn_msa_orig = self.db.fn_seqs(iog)
+        n_seqs_orig_lower_bound = self.n_seqs_1234(fn_msa_orig)
         fn_msa_new = infn + ".msa.fa"
 
-        # print("mafft --quiet --add %s %s > %s" % (infn, fn_msa_orig, fn_msa_new))
         subprocess.call("mafft --quiet --add %s %s > %s" % (infn, fn_msa_orig, fn_msa_new), shell=True)
         print(fn_msa_new)
-        if method == "iqtree":
+        if n_seqs_orig_lower_bound > 3:
+            # have an original tree with 4 or more taxa + new seq
+            # then won't have a complete tree
             fn_tree_orig = self.db.fn_tree(iog)
             t = ete3.Tree(fn_tree_orig)
             t.unroot()
@@ -36,13 +42,29 @@ class MSAGrafter(object):
             t.write(outfile=fn_unrooted)
             subprocess.call("iqtree -quiet -m LG -fast -redo -g %s -s %s" % (fn_unrooted, fn_msa_new), shell=True)
             fn_tree_new = fn_msa_new + ".treefile"
-        elif method == "fasttree":
-            fn_tree_new = infn + ".msa.tre"
-            # print("FastTree -quiet %s > %s" % (fn_msa_new, fn_tree_new))
-            subprocess.call("FastTree -quiet %s > %s" % (fn_msa_new, fn_tree_new), shell=True)
-            print(fn_tree_new)
+        elif n_seqs_orig_lower_bound == 3:
+            # have minimum number of sequences for a tree, by no original tree
+            subprocess.call("iqtree -quiet -m LG -fast -redo -s %s" % fn_msa_new, shell=True)
+            fn_tree_new = fn_msa_new + ".treefile"
         else:
-            raise NotImplementedError("Unknown method: %s" % method)
+            # not enough taxa for a tree
+            genes = []
+            with open(fn_msa_new, 'r') as infile:
+                for l in infile:
+                    if l.startswith(">"):
+                        genes.append(l[1:].rstrip())
+            newick_str = "(" + ",".join(genes) + ");"
+            fn_final_tree = fn_msa_new + ".tre"
+            with open(fn_final_tree, 'w') as outfile:
+                outfile.write(newick_str)
+            warn_string = "Tree could not be rooted"
+            return fn_final_tree, warn_string
+
+        if n_seqs_orig_lower_bound < 4:
+            # no original tree to root with
+            warn_string = "Tree could not be rooted"
+            return fn_tree_new, warn_string
+
         # Root the tree as it was previously rooted
         fn_tree = self.db.fn_tree(iog)
         t_orig = ete3.Tree(fn_tree)
@@ -80,11 +102,25 @@ class MSAGrafter(object):
         # transfer_support_values(t_orig, t_new)
         fn_final_tree = infn + ".grafted.msa.tre"
         t_new.write(outfile=fn_final_tree)
-        return fn_final_tree
+        return fn_final_tree, warn_string
 
     @staticmethod
     def iqtree_names_adjust(genes):
         return [g.replace("|", "_") for g in genes]
+
+    @staticmethod
+    def n_seqs_1234(infn):
+        """
+        Returns the number of sequences if it is less than 4, otherwise returns 4
+        """
+        n = 0
+        with open(infn, 'r') as infile:
+            for l in infile:
+                if l.startswith(">"):
+                    n+=1
+                    if n >= 4:
+                        break
+        return n
 
     @staticmethod
     def check_monophyly(node, taxa):
