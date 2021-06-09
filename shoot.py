@@ -11,7 +11,7 @@ def main(d_db, infn, q_msa, q_print=False):
     og_assign = og_assigner.OGAssignDIAMOND(d_db)
     iog, q_tree = og_assign.assign(infn)
     if iog != -1:
-        print("Gene assigned to OG%07d" % iog)
+        print("Gene assigned to: OG%07d" % iog)
     # if not q_tree:
     #     print("No tree, analysis complete")
     #     return

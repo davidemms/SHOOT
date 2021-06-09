@@ -31,7 +31,7 @@ class MSAGrafter(object):
         fn_msa_new = infn + ".msa.fa"
 
         subprocess.call("mafft --quiet --add %s %s > %s" % (infn, fn_msa_orig, fn_msa_new), shell=True)
-        print(fn_msa_new)
+        # print(fn_msa_new)
         if n_seqs_orig_lower_bound > 3:
             # have an original tree with 4 or more taxa + new seq
             # then won't have a complete tree

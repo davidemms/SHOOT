@@ -1,3 +1,4 @@
+import os 
 import sys
 import gzip
 import csv
@@ -51,7 +52,10 @@ class OGAssignDIAMOND(OGAssigner):
         """
         fn_db = self.d_db + "diamond_profile_sequences.fa.db.dmnd"
         fn_og_results_out = fn_out_base + ".ogs.txt"
-        subprocess.call(["diamond", "blastp", "-d", fn_db, "-q", fn_query, "-o", fn_og_results_out, "--quiet", "-e", "0.001", "--compress", "1"])
+        with open(os.devnull, 'w') as FNULL:
+            subprocess.call(["diamond", "blastp", "-d", fn_db, "-q", fn_query, "-o", fn_og_results_out, "--quiet", "-e", "0.001", "--compress", "1"], 
+                            stdout=FNULL,
+                            stderr=FNULL)
         return fn_og_results_out + ".gz"
 
     def og_from_diamond_results(self, fn_og_results_out):
