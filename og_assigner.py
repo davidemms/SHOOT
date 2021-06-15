@@ -53,7 +53,7 @@ class OGAssignDIAMOND(OGAssigner):
         fn_db = self.d_db + "diamond_profile_sequences.fa.db.dmnd"
         fn_og_results_out = fn_out_base + ".ogs.txt"
         with open(os.devnull, 'w') as FNULL:
-            subprocess.call(["diamond", "blastp", "-d", fn_db, "-q", fn_query, "-o", fn_og_results_out, "--quiet", "-e", "0.001", "--compress", "1"], 
+            subprocess.call(["diamond", "blastp", "-p", "1", "--ultra-sensitive", "-d", fn_db, "-q", fn_query, "-o", fn_og_results_out, "--quiet", "-e", "0.001", "--compress", "1"],   #
                             stdout=FNULL,
                             stderr=FNULL)
         return fn_og_results_out + ".gz"
