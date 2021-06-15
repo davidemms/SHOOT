@@ -39,9 +39,13 @@ class OGAssignDIAMOND(OGAssigner):
         """
         fn_results = self.run_diamond(infn, infn)
         iog, q_tree = self.og_from_diamond_results(fn_results)
+        if iog == -1:
+            # Try again with a more sensitive search
+            fn_results = self.run_diamond(infn, infn, q_ultra_sens=True)
+            iog, q_tree = self.og_from_diamond_results(fn_results)
         return iog, q_tree
     
-    def run_diamond(self, fn_query, fn_out_base):
+    def run_diamond(self, fn_query, fn_out_base, q_ultra_sens=False):
         """
         Run DIAMOND against database of orthogroup profiles
         Args:
@@ -53,9 +57,10 @@ class OGAssignDIAMOND(OGAssigner):
         fn_db = self.d_db + "diamond_profile_sequences.fa.db.dmnd"
         fn_og_results_out = fn_out_base + ".ogs.txt"
         with open(os.devnull, 'w') as FNULL:
-            subprocess.call(["diamond", "blastp", "-p", "1", "--ultra-sensitive", "-d", fn_db, "-q", fn_query, "-o", fn_og_results_out, "--quiet", "-e", "0.001", "--compress", "1"],   #
-                            stdout=FNULL,
-                            stderr=FNULL)
+            cmd_list = ["diamond", "blastp", "-p", "1", "-d", fn_db, "-q", fn_query, "-o", fn_og_results_out, "--quiet", "-e", "0.001", "--compress", "1"]
+            if q_ultra_sens:
+                cmd_list += ["--ultra-sensitive"]
+            subprocess.call(cmd_list,stdout=FNULL, stderr=FNULL)
         return fn_og_results_out + ".gz"
 
     def og_from_diamond_results(self, fn_og_results_out):
