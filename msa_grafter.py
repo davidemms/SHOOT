@@ -36,7 +36,10 @@ class MSAGrafter(object):
             # have an original tree with 4 or more taxa + new seq
             # then won't have a complete tree
             fn_tree_orig = self.db.fn_tree(iog)
-            t = ete3.Tree(fn_tree_orig)
+            try:
+                t = ete3.Tree(fn_tree_orig)
+            except ete3.parser.newick.NewickError:
+                t = ete3.Tree(fn_tree_orig, format=1)
             t.unroot()
             fn_unrooted = fn_tree_orig + ".un.tre"
             t.write(outfile=fn_unrooted)
@@ -66,8 +69,10 @@ class MSAGrafter(object):
             return fn_tree_new, warn_string
 
         # Root the tree as it was previously rooted
-        fn_tree = self.db.fn_tree(iog)
-        t_orig = ete3.Tree(fn_tree)
+        try:
+            t_orig = ete3.Tree(fn_tree_orig)
+        except ete3.parser.newick.NewickError:
+            t_orig = ete3.Tree(fn_tree_orig, format=1)
         chs = t_orig.get_children()
         n = [len(ch) for ch in chs]
         i = n.index(min(n))

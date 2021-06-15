@@ -85,8 +85,8 @@ class OGAssignDIAMOND(OGAssigner):
         elif len(c) == 1:
             # unique match
             og, _ = c.most_common(1)[0]
-            q_tree = og.startswith("x")
-            if q_tree:
+            q_tree = not og.startswith("x")
+            if not q_tree:
                 og = og[1:]   # indicates 3 or fewer genes
             return int(og), q_tree
         
