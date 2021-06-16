@@ -57,7 +57,7 @@ class OGAssignDIAMOND(OGAssigner):
         fn_db = self.d_db + "diamond_profile_sequences.fa.db.dmnd"
         fn_og_results_out = fn_out_base + ".ogs.txt"
         with open(os.devnull, 'w') as FNULL:
-            cmd_list = ["diamond", "blastp", "-p", "1", "-d", fn_db, "-q", fn_query, "-o", fn_og_results_out, "--quiet", "-e", "0.001", "--compress", "1"]
+            cmd_list = ["diamond", "blastp", "-d", fn_db, "-q", fn_query, "-o", fn_og_results_out, "--quiet", "-e", "0.001", "--compress", "1"]
             if q_ultra_sens:
                 cmd_list += ["--ultra-sensitive"]
             subprocess.call(cmd_list,stdout=FNULL, stderr=FNULL)
