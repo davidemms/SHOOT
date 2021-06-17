@@ -1,3 +1,12 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+Split up large trees into smaller subtrees plus one supertree linking the subtrees
+For the SHOOT database rooted trees are required (i.e. Gene_Tree/ directory of Orthofinder)
+so translate these back to OrthoFinder IDs using the -w option
+
+"""
 import os 
 import argparse
 
@@ -5,7 +14,7 @@ import ete3
 
 import fasta_writer
 
-def split_tree(fn_tree, fn_msa, n_taxa, q_outgroup):
+def split_tree(fn_tree, fn_msa, n_taxa, q_outgroup, q_ids=False):
     """
     Split a tree into smaller subtrees
     Args:
@@ -20,8 +29,16 @@ def split_tree(fn_tree, fn_msa, n_taxa, q_outgroup):
         that, it is the number of sequences in the tree.
         Clades left in the tree are treated as requiring 5 profile sequences too.
     """
-    n_profile = 0
     fw = fasta_writer.FastaWriter(fn_msa)
+    # if q_ids:
+    #     import ofids
+    #     ids = ofids.OrthoFinderIDs(os.path.dirname + "/../WorkingDirectory/").Spec_SeqDict()
+    #     ids_rev = {v:k for k,v in ids.items()}
+    if q_outgroup:
+        # work out number of gaps for each gene - cheap measure of what's best
+        # to use as the outgroup gene
+        d_ngaps = {name:seq.count("-") for name, seq in fw.SeqLists.items()}
+    n_profile = 0
     d, fn = os.path.split(fn_tree)
     if d == "":
         d = "./"
@@ -47,19 +64,49 @@ def split_tree(fn_tree, fn_msa, n_taxa, q_outgroup):
     for n in t.traverse("preorder", is_leaf_fn = stop_fn):
         l = len(n)
         if l <= n_taxa:
-            # split here 
+            # Steps:
+            # 1. Write newick & MSA for subtree
+            # 2. Name the node in the supertree to PART...
+            # 3. Reread in subtree and unroot if required (don't mess around with the original tree)
+            # 4. After we've finished, remove all the subtrees below the PART... nodes
             n_profile += min(5, l)
-            n.write(outfile = fn_out_pat % i_part)
-            # get a representative from each split
-            fw.WriteSeqsToFasta(n.get_leaf_names(), fn_out_msa_pat % i_part)
+            if not q_outgroup:
+                nwk = n.write(outfile)
+                fw.WriteSeqsToFasta(n.get_leaf_names(), fn_out_msa_pat % i_part)
+            else:    
+                # go to sister clade, pick gene with fewest gaps
+                sisters = [s for s in n.up.children if s != n]
+                sister_genes = [g for s in sisters for g in s.get_leaf_names()]
+                n_gaps = [9e99 if g.startswith("PART.") else d_ngaps[g] for g in sister_genes]
+                x = min(n_gaps)
+                i = n_gaps.index(x)   # doesn't matter if there is a tie, any will do
+                outgrp = sister_genes[i]
+                d = n.get_distance(outgrp)
+                if not (d > n.dist):
+                    print(([n, ], sisters))
+                    print((n.get_leaf_names()[0], outgrp))
+                    print((n.dist, d))
+                assert(d > n.dist)
+                nwk = n.write()
+                nwk = "(" + nwk[:-1] + ",SHOOTOUTGROUP_%s:%0.5f);" % (outgrp, d-n.dist)
+                genes = n.get_leaf_names()
+                translate = {g:g for g in genes}
+                translate[outgrp] = "SHOOTOUTGROUP_" + outgrp
+                fw.WriteSeqsToFasta(genes, fn_out_msa_pat % i_part)
+            with open(fn_out_pat % i_part, 'w') as outfile:
+                outfile.write(nwk + "\n")
+            n.name = "PART.%d-%d_genes" % (i_part, l)
             sizes.append(l)
-            p = n.up
-            n = n.detach()
-            if len(n) > 2:
-                n.unroot()
-            n.write(outfile = (fn_out_pat % i_part) + ".unroot.tre")
-            ch = p.add_child(name = "PART.%d-%d_genes" % (i_part, l))
+            t_sub = ete3.Tree(nwk)
+            if len(t_sub) >= 3:
+                t_sub.unroot()
+            t_sub.write(outfile = (fn_out_pat % i_part) + ".unroot.tre")
             i_part += 1
+    # 4. Remove all the subtrees
+    for n in t.traverse('preorder', is_leaf_fn=stop_fn):
+        if n.name.startswith("PART."):
+            for ch in n:
+                ch.detach()
     # print(sorted(sizes))
     t.write(outfile=fn_out_mega_pat)
     t.unroot()
@@ -85,9 +132,15 @@ if __name__ == "__main__":
     parser.add_argument("tree", help="Input tree file")
     parser.add_argument("msa", help="Input MSA file")
     parser.add_argument("-n", "--ntaxa", help="Number of taxa to aim for for each subtree", type=int, default=500)
+    parser.add_argument("-i", "--ids", action="store_true",
+                        help="Translate back to OrthoFinder IDs")
     parser.add_argument("-o", "--outgroup", action="store_true",
                         help="Include an outgroup gene in each subtree. Required for SHOOT", )
     args = parser.parse_args()
-    split_tree(args.tree, args.msa, args.ntaxa, q_outgroup=args.outgroup)
+    split_tree(args.tree, 
+                args.msa, 
+                args.ntaxa, 
+                q_outgroup=args.outgroup,
+                q_ids=args.ids)
 
     # count_profiles()
