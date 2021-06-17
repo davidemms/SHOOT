@@ -11,10 +11,14 @@ import quartets_pairwise_align
 
 
 def main(d_db, infn, q_msa, q_print=False):
+    query_name, query_renamed, infn = rename_gene(infn)
     og_assign = og_assigner.OGAssignDIAMOND(d_db)
-    iog, q_tree = og_assign.assign(infn)
-    if iog != -1:
-        print("Gene assigned to: OG%07d" % iog)
+    og_part = og_assign.assign(infn)
+    if og_part is not None:
+        print("Gene assigned to: OG%s" % og_part)
+    else:
+        print("Gene not assigned to tree")
+        return ""
     # if not q_tree:
     #     print("No tree, analysis complete")
     #     return
@@ -24,9 +28,9 @@ def main(d_db, infn, q_msa, q_print=False):
     if q_msa:
         # do a tree using an MSA
         graft = msa_grafter.MSAGrafter(d_db)
-        fn_tree, warn_str = graft.add_gene(iog, infn)
+        fn_tree, warn_str = graft.add_gene(og_part, infn, query_name, query_renamed)
     else:
-        quart = quartets_pairwise_align.PairwiseAlignQuartets(d_db, iog, infn)
+        quart = quartets_pairwise_align.PairwiseAlignQuartets(d_db, og_part, infn)
         search = tree_grafter.TreeGrafter(quart, d_db)
         # This doesn't feel right, iog is fixed in the constructor of quart and hence
         # in the constructor of search, and yet is passed as a variable here.
@@ -40,6 +44,24 @@ def main(d_db, infn, q_msa, q_print=False):
         with open(fn_tree, 'r') as infile:
             print(next(infile).rstrip())   # remove any trailing newline characters
     return fn_tree        
+
+def rename_gene(infn):
+    preface_str = "YdN3Z" # this will not occur in the shoot database
+    with open(infn, 'r') as infile:
+        acc = next(infile)
+        if acc.startswith(">"):
+            acc = acc[1:].rstrip()
+            acc_new = preface_str + acc
+        else:
+            acc = "Query"
+            acc_new = preface_str + acc
+        lines = infile.readlines()
+    fn_new = infn + ".rn.fa"
+    with open(fn_new, 'w') as outfile:
+        outfile.write(">" + acc_new + "\n")
+        for l in lines:
+            outfile.write(l)
+    return acc, acc_new, fn_new
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

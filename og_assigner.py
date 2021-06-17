@@ -17,7 +17,7 @@ class OGAssigner(object):
         Args:
             infn - Input FASTA filename
         Returns
-            iog - index of OG
+            og - index of OG & subpart "int.int" or "int"
         """
         raise NotImplemented()
 
@@ -38,12 +38,12 @@ class OGAssignDIAMOND(OGAssigner):
             iog - index of OG
         """
         fn_results = self.run_diamond(infn, infn)
-        iog, q_tree = self.og_from_diamond_results(fn_results)
-        if iog == -1:
+        iog = self.og_from_diamond_results(fn_results)
+        if iog is None:
             # Try again with a more sensitive search
             fn_results = self.run_diamond(infn, infn, q_ultra_sens=True)
-            iog, q_tree = self.og_from_diamond_results(fn_results)
-        return iog, q_tree
+            iog = self.og_from_diamond_results(fn_results)
+        return iog
     
     def run_diamond(self, fn_query, fn_out_base, q_ultra_sens=False):
         """
@@ -54,7 +54,7 @@ class OGAssignDIAMOND(OGAssigner):
         Returns:
             fn_og_results_out - DIAMOND results filename
         """
-        fn_db = self.d_db + "diamond_profile_sequences.fa.db.dmnd"
+        fn_db = self.d_db + "diamond_profile_sequences.new.fa.db.dmnd"
         fn_og_results_out = fn_out_base + ".ogs.txt"
         with open(os.devnull, 'w') as FNULL:
             cmd_list = ["diamond", "blastp", "-d", fn_db, "-q", fn_query, "-o", fn_og_results_out, "--quiet", "-e", "0.001", "--compress", "1"]
@@ -69,8 +69,7 @@ class OGAssignDIAMOND(OGAssigner):
         Args:
             fn_og_results_out - fn of compressed DIAMOND results
         Returns:
-            iog        : int
-            q_has_tree : bool
+            iog        : str "int.int" or "int" otherwise None
         """
         ogs = []
         scores = []
@@ -86,14 +85,14 @@ class OGAssignDIAMOND(OGAssigner):
         # Easy cases
         if len(c) == 0:
             # no match
-            return -1, False
+            return None
         elif len(c) == 1:
             # unique match
             og, _ = c.most_common(1)[0]
-            q_tree = not og.startswith("x")
-            if not q_tree:
-                og = og[1:]   # indicates 3 or fewer genes
-            return int(og), q_tree
+            if og.startswith("x"):
+                # used to indicate 3 or fewer genes
+                og = og[1:]
+            return og
         
         # Otherwise, decide between the cases
         a, b = c.most_common(2)
@@ -109,6 +108,6 @@ class OGAssignDIAMOND(OGAssigner):
             # all scored 1, get the highest scoring
             og = next(r for r in ogs if (r == a[0] or r == b[0]))
         if og.startswith("x"):
-            return int(og[1:]), False
+            return og[1:]
         else:
-            return int(og), True
+            return og

@@ -87,14 +87,15 @@ def create_profiles_database(din, q_kmeans = True, n_for_profile=5, q_ids=True):
     directory suitable for use by SHOOT. Each sequence is named <OG>_isp_iseq.
     """
     wd = din + "WorkingDirectory/"
-    pat_super = din + "Gene_Trees/subtrees/super/OG%07d_tree.txt.super.tre"
-    pat_sub_msa_glob = din + "Gene_Trees/subtrees/msa_sub/OG%07d_tree.txt.*.fa"
+    pat_super = din + "Gene_Trees/subtrees/super/OG%07d.super.tre"
+    pat_sub_msa_glob = din + "Gene_Trees/subtrees/msa_sub/OG%07d.*.fa"
     fn_fasta = din + "diamond_profile_sequences.new.fa"
     fn_diamond_db = fn_fasta + ".db"
     ogs = get_orthogroups(wd + "clusters_OrthoFinder_I1.5.txt_id_pairs.txt")
     fw = fasta_writer.FastaWriter(wd + "Species*fa", qGlob=True)
     seq_write = []
     seq_convert = dict()
+    print("WARNING: Check all gene names, can't start with '__'")
     # If there are subtrees then we need to convert their IDs in the profile file
     # back to internal IDs
     if q_ids:
@@ -102,19 +103,21 @@ def create_profiles_database(din, q_kmeans = True, n_for_profile=5, q_ids=True):
         ids = ofids.OrthoFinderIDs(wd).SequenceDict()
         ids_rev = {v:k for k,v in ids.items()}
     for iog, og in enumerate(ogs):
-        if iog % 1000 == 0:
+        if iog % 10 == 0:
             print(iog)
         n = len(og)
-        if n < 4:
-            og_id = "x%07d_" % iog      # indicates no tree
-        else:
-            og_id = "%07d_" % iog
+        og_id = "%07d" % iog
+        # if n < 4:
+        #     og_id = "x%07d" % iog      # indicates no tree
+        # else:
+        #     og_id = "%07d" % iog
         q_subtrees = os.path.exists(pat_super % iog)
         if q_subtrees:
             fns_msa = list(glob.glob(pat_sub_msa_glob % iog))
         else:
             fns_msa = [wd + "Alignments_ids/OG%07d.fa" % iog, ]
         for fn in fns_msa:
+            i_part = os.path.basename(fn).rsplit(".", 2)[1]
             if q_kmeans:
                 if q_subtrees:
                     # MSA needs to be modified
@@ -132,10 +135,19 @@ def create_profiles_database(din, q_kmeans = True, n_for_profile=5, q_ids=True):
                     fw_temp = fasta_writer.FastaWriter(fn)
                     og = [g for g in fw_temp.SeqLists if not g.startswith("SHOOTOUTGROUP_")]
                 s = sample_random(og, n_for_profile)
+            if (q_ids and q_subtrees):
+                s = [ids_rev[ss] for ss in s]
+            if q_subtrees:
+                og_id_full = og_id + "." + i_part
+            else:
+                og_id_full = og_id
             seq_write.extend(s)
             for ss in s:
-                seq_convert[ss] = og_id + ids_rev[ss] if q_ids else ss
-    fw.WriteSeqsToFasta_withNewAccessions(seq_write, fn_fasta, seq_convert)
+                seq_convert[ss] = og_id_full + "_" + ss
+        # re-write it for each OG so I can check it's going ok
+        # print(seq_write)
+        # print(list(fw.SeqLists.keys())[:10])
+        fw.WriteSeqsToFasta_withNewAccessions(seq_write, fn_fasta, seq_convert)
     subprocess.call(["diamond", "makedb", "--in", fn_fasta, "-d", fn_diamond_db])
 
 

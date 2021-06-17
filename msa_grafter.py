@@ -17,16 +17,21 @@ class MSAGrafter(object):
         """
         self.db = database.Database(d_db)
 
-    def add_gene(self, iog, infn, method = "iqtree"):
+    def add_gene(self, og_part, infn, name_orig = None, name_temp = None, method = "iqtree"):
         """
         Args:
-            iog - the OG to search in
+            og_part - the OG or OG.PART to search in
             infn - FASTA filename containing the gene sequence
+            name_orig - Gene name from user
+            name_temp - Working gene name to prevent clash
+        Notes:
+            - If name_orig and name_temp are both not None, changes query name back
+            to name_orig in the final tree
         """
         warn_string = ""
-        fn_msa_orig = self.db.fn_msa(iog)
-        if not os.path.exists(fn_msa_orig):
-            fn_msa_orig = self.db.fn_seqs(iog)
+        fn_msa_orig = self.db.fn_msa(og_part)
+        # if not os.path.exists(fn_msa_orig):
+        #     fn_msa_orig = self.db.fn_seqs(iog)
         n_seqs_orig_lower_bound = self.n_seqs_1234(fn_msa_orig)
         fn_msa_new = infn + ".msa.fa"
 
@@ -34,15 +39,17 @@ class MSAGrafter(object):
         # print(fn_msa_new)
         if n_seqs_orig_lower_bound > 3:
             # have an original tree with 4 or more taxa + new seq
-            # then won't have a complete tree
-            fn_tree_orig = self.db.fn_tree(iog)
-            try:
-                t = ete3.Tree(fn_tree_orig)
-            except ete3.parser.newick.NewickError:
-                t = ete3.Tree(fn_tree_orig, format=1)
-            t.unroot()
-            fn_unrooted = fn_tree_orig + ".un.tre"
-            t.write(outfile=fn_unrooted)
+            # then will have a complete tree
+            fn_tree_orig = self.db.fn_tree(og_part)
+            fn_unrooted = fn_tree_orig + ".unroot.tre"
+            if not os.path.exists(fn_unrooted):
+                try:
+                    t = ete3.Tree(fn_tree_orig)
+                except ete3.parser.newick.NewickError:
+                    t = ete3.Tree(fn_tree_orig, format=1)
+                t.unroot()
+                fn_unrooted = fn_tree_orig + ".un.tre"
+                t.write(outfile=fn_unrooted)
             subprocess.call("iqtree -nt 32 -quiet -m LG -fast -redo -g %s -s %s" % (fn_unrooted, fn_msa_new), shell=True)
             fn_tree_new = fn_msa_new + ".treefile"
         elif n_seqs_orig_lower_bound == 3:
@@ -66,8 +73,12 @@ class MSAGrafter(object):
         if n_seqs_orig_lower_bound < 4:
             # no original tree to root with
             warn_string = "Tree could not be rooted"
+            if (name_orig is not None and name_temp is not None):
+                t = ete3.Tree(fn_tree_new)
+                n = t & name_temp
+                n.name = name_orig
+                t.write(outfile = fn_tree_new)
             return fn_tree_new, warn_string
-
         # Root the tree as it was previously rooted
         try:
             t_orig = ete3.Tree(fn_tree_orig)
@@ -81,6 +92,9 @@ class MSAGrafter(object):
             outgroup_names = self.iqtree_names_adjust(outgroup_names)
         #print(outgroup_names)
         t_new = ete3.Tree(fn_tree_new, format=1)
+        if (name_orig is not None and name_temp is not None):
+            n = t_new & name_temp
+            n.name = name_orig
         for n in t_new.traverse():
             if not n.is_leaf() and n.name != "":
                 try:

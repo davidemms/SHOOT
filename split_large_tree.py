@@ -46,9 +46,10 @@ def split_tree(fn_tree, fn_msa, n_taxa, q_outgroup):
         if not os.path.exists(d_to_make):
             os.mkdir(d_to_make)
     t = ete3.Tree(fn_tree)
-    fn_out_pat = d_out_sub + fn + ".%d.tre"
-    fn_out_msa_pat = d_out_msa_sub + fn + ".%d.fa"
-    fn_out_mega_pat = d_out_sup + fn + ".super.tre"
+    fn_og_part = fn.split("_")[0]
+    fn_out_pat = d_out_sub + fn_og_part + ".%d.tre"
+    fn_out_msa_pat = d_out_msa_sub + fn_og_part + ".%d.fa"
+    fn_out_mega_pat = d_out_sup + fn_og_part + ".super.tre"
     i_part = 0
     if len(t) <= n_taxa:
         t.write(outfile = fn_out_pat % i_part)
