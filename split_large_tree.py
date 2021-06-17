@@ -14,7 +14,7 @@ import ete3
 
 import fasta_writer
 
-def split_tree(fn_tree, fn_msa, n_taxa, q_outgroup, q_ids=False):
+def split_tree(fn_tree, fn_msa, n_taxa, q_outgroup):
     """
     Split a tree into smaller subtrees
     Args:
@@ -30,10 +30,6 @@ def split_tree(fn_tree, fn_msa, n_taxa, q_outgroup, q_ids=False):
         Clades left in the tree are treated as requiring 5 profile sequences too.
     """
     fw = fasta_writer.FastaWriter(fn_msa)
-    # if q_ids:
-    #     import ofids
-    #     ids = ofids.OrthoFinderIDs(os.path.dirname + "/../WorkingDirectory/").Spec_SeqDict()
-    #     ids_rev = {v:k for k,v in ids.items()}
     if q_outgroup:
         # work out number of gaps for each gene - cheap measure of what's best
         # to use as the outgroup gene
@@ -92,7 +88,8 @@ def split_tree(fn_tree, fn_msa, n_taxa, q_outgroup, q_ids=False):
                 genes = n.get_leaf_names()
                 translate = {g:g for g in genes}
                 translate[outgrp] = "SHOOTOUTGROUP_" + outgrp
-                fw.WriteSeqsToFasta(genes, fn_out_msa_pat % i_part)
+                genes = [outgrp, ] + genes
+                fw.WriteSeqsToFasta_withNewAccessions(genes, fn_out_msa_pat % i_part, translate)
             with open(fn_out_pat % i_part, 'w') as outfile:
                 outfile.write(nwk + "\n")
             n.name = "PART.%d-%d_genes" % (i_part, l)
@@ -132,15 +129,12 @@ if __name__ == "__main__":
     parser.add_argument("tree", help="Input tree file")
     parser.add_argument("msa", help="Input MSA file")
     parser.add_argument("-n", "--ntaxa", help="Number of taxa to aim for for each subtree", type=int, default=500)
-    parser.add_argument("-i", "--ids", action="store_true",
-                        help="Translate back to OrthoFinder IDs")
     parser.add_argument("-o", "--outgroup", action="store_true",
                         help="Include an outgroup gene in each subtree. Required for SHOOT", )
     args = parser.parse_args()
     split_tree(args.tree, 
                 args.msa, 
                 args.ntaxa, 
-                q_outgroup=args.outgroup,
-                q_ids=args.ids)
+                q_outgroup=args.outgroup)
 
     # count_profiles()
