@@ -3,6 +3,7 @@ Add the new sequence to an existing MSA and then infer the tree from that. If po
 use the original tree as a start point - but not sure if I've got anything that can do this.
 """
 import os
+import shutil
 import subprocess
 
 import ete3
@@ -35,6 +36,7 @@ class MSAGrafter(object):
             to name_orig in the final tree
         """
         q_subtree = "." in og_part
+        fn_final_tree = infn + ".shoot.tre"
         warn_string = ""
         fn_msa_orig = self.db.fn_msa(og_part)
         # if not os.path.exists(fn_msa_orig):
@@ -57,15 +59,14 @@ class MSAGrafter(object):
             fn_tree_new = self.run_iqtree(og_part, n_seqs_orig_123many, fn_msa_new, q_subtree)
         else:
             if not q_subtree:
-                fn_final_tree = fn_msa_new + ".tre"
                 self.write_trivial_tree(genes, fn_final_tree)
-                warn_string = "Tree could not be rooted"
+                # warn_string = "Tree could not be rooted"
                 return fn_final_tree, query_name, warn_string
 
         # Rooting
         if not q_subtree:
             # Based on previous outgroup
-            fn_final_tree, warn_string_root = self.root_independent_tree(og_part, fn_tree_new, n_seqs_orig_123many, method == "iqtree")
+            warn_string_root = self.root_independent_tree(og_part, fn_final_tree, fn_tree_new, n_seqs_orig_123many, method == "iqtree")
             if warn_string != "":
                 warn_string = "\n" + warn_string
             else:
@@ -74,15 +75,16 @@ class MSAGrafter(object):
             # Rooting for case of subtrees
             n_taxa_123many = n_seqs_orig_123many + 1
             nwk_sub, t_sup = self.root_subtree(og_part, n_taxa_123many, genes, fn_tree_new)
-            fn_final_tree = self.reconstruct_super_tree(infn, og_part, t_sup, nwk_sub)
+            self.reconstruct_super_tree(fn_final_tree, og_part, t_sup, nwk_sub)
         return fn_final_tree, query_name, warn_string
 
 
-    def root_independent_tree(self, og_part, fn_tree_new, n_seqs_123many, iq_name_adjust):
+    def root_independent_tree(self, og_part, fn_final_tree, fn_tree_new, n_seqs_123many, iq_name_adjust):
         """
         Root a standalone tree using the outgroup from the original, rooted version
         Args:
-            og_part - Assigned OG str, either iog or iog.ipart
+            og_part - assigned OG str, either iog or iog.ipart
+            fn_final_tree - the filename to use for the final tree
             fn_tree_new - filename for tree with new sequence included 
             n_seqs_123many - Lower bound on number of taxa in tree, 1,2,3 or 4
             iq_name_adjust - Should names changes be accounted for when comparing 
@@ -91,7 +93,8 @@ class MSAGrafter(object):
         if n_seqs_123many < 4:
             # no original tree to root with
             warn_string = "Tree could not be rooted"
-            return fn_tree_new, warn_string
+            shutil.copy(fn_tree_new, fn_final_tree)
+            return warn_string
 
         # Root the tree as it was previously rooted
         fn_tree_orig = self.db.fn_tree(og_part)
@@ -131,9 +134,8 @@ class MSAGrafter(object):
             if root != t_new:
                 t_new.set_outgroup(root)
         # transfer_support_values(t_orig, t_new)
-        fn_final_tree = fn_tree_new + ".grafted.msa.tre"
         t_new.write(outfile=fn_final_tree)
-        return fn_final_tree, ""
+        return ""
 
 
     def root_subtree(self, og_part, n_taxa_3many, genes, fn_tree_new):
@@ -182,11 +184,11 @@ class MSAGrafter(object):
         return nwk_sub, t_sup
 
 
-    def reconstruct_super_tree(self, infn, og_part, t_sup, nwk_sub):
+    def reconstruct_super_tree(self, fn_final_tree, og_part, t_sup, nwk_sub):
         """
         Reconstruct the super-tree from its component subtrees
         Args:
-            infn - original input FASTA filename
+            fn_final_tree - filename to use for final tree
             og_part - the OG.PART the gene was assigned to
             t_sup - the super-tree with "PART.<I>
             nwk_sub - the Newick sub-string for the inferred subtree, ready to take
@@ -224,10 +226,9 @@ class MSAGrafter(object):
             i, remainder = c.split(":", 1)
             nwk += d_sub_nwks[int(i)] + remainder
         nwk += nwk_sup_splits[-1]
-        fn_final_tree = infn + ".grafted.msa.tre"
         with open(fn_final_tree, 'w') as outfile:
             outfile.write(nwk + "\n")
-        return fn_final_tree
+        return
 
 
     def run_iqtree(self, og_part, n_seqs_123many, fn_msa, q_subtree):
