@@ -17,12 +17,8 @@ def main(d_db, infn, q_msa, q_print=False):
     if og_part is not None:
         print("Gene assigned to: OG%s" % og_part)
     else:
-        print("Gene not assigned to tree")
+        print("No homologs found for gene in this database")
         return ""
-    # if not q_tree:
-    #     print("No tree, analysis complete")
-    #     return
-    # else:
 
     warn_str = ""
     if q_msa:
@@ -45,6 +41,7 @@ def main(d_db, infn, q_msa, q_print=False):
             print(next(infile).rstrip())   # remove any trailing newline characters
     return fn_tree        
 
+
 def rename_gene(infn):
     preface_str = "YdN3Z" # this will not occur in the shoot database
     with open(infn, 'r') as infile:
@@ -55,13 +52,14 @@ def rename_gene(infn):
         else:
             acc = "Query"
             acc_new = preface_str + acc
-        lines = infile.readlines()
+        lines = [l for l in infile] # python incorrectly complains about readlines
     fn_new = infn + ".rn.fa"
     with open(fn_new, 'w') as outfile:
         outfile.write(">" + acc_new + "\n")
         for l in lines:
             outfile.write(l)
     return acc, acc_new, fn_new
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
