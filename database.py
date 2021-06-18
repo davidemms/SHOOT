@@ -32,7 +32,23 @@ class Database(object):
             return self.d_db + "Gene_Trees/subtrees/sub/OG%s.tre" % og_part
         else:
             return self.d_db + "Gene_Trees/OG%s_tree.txt" % og_part
-        
+
+    def fn_tree_super(self, iog):
+        """
+        Returns tree filename
+        Args:
+            iog: int
+        """
+        return self.d_db + "Gene_Trees/subtrees/super/OG%07d.super.tre" % iog
+
+    def fn_trees_sub_without(self, iog, ipart):
+        """
+        Returns glob pattern for sub trees for this OG
+        Args:
+            iog: int
+        """
+        return self.d_db + "Gene_Trees/subtrees/sub/OG%07d.%d.without.tre" % (iog, ipart)
+
         
     def fn_seqs(self, iog):
         return self.d_db + "Orthogroup_Sequences/OG%07d.fa" % iog

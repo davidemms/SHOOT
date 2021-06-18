@@ -47,7 +47,8 @@ def split_tree(fn_tree, fn_msa, n_taxa, q_outgroup):
             os.mkdir(d_to_make)
     t = ete3.Tree(fn_tree)
     fn_og_part = fn.split("_")[0]
-    fn_out_pat = d_out_sub + fn_og_part + ".%d.tre"
+    fn_out_pat = d_out_sub + fn_og_part + ".%d.tre"      # with outgroup  
+    fn_out_pat_without = d_out_sub + fn_og_part + ".%d.without.tre"   # without outgroup
     fn_out_msa_pat = d_out_msa_sub + fn_og_part + ".%d.fa"
     fn_out_mega_pat = d_out_sup + fn_og_part + ".super.tre"
     i_part = 0
@@ -84,6 +85,7 @@ def split_tree(fn_tree, fn_msa, n_taxa, q_outgroup):
                     print((n.get_leaf_names()[0], outgrp))
                     print((n.dist, d))
                 assert(d > n.dist)
+                n.write(outfile=fn_out_pat_without % i_part)
                 nwk = n.write()
                 nwk = "(" + nwk[:-1] + ",SHOOTOUTGROUP_%s:%0.5f);" % (outgrp, d-n.dist)
                 genes = n.get_leaf_names()
@@ -93,7 +95,7 @@ def split_tree(fn_tree, fn_msa, n_taxa, q_outgroup):
                 fw.WriteSeqsToFasta_withNewAccessions(genes, fn_out_msa_pat % i_part, translate)
             with open(fn_out_pat % i_part, 'w') as outfile:
                 outfile.write(nwk + "\n")
-            n.name = "PART.%d-%d_genes" % (i_part, l)
+            n.name = "PART.%d" % i_part
             sizes.append(l)
             t_sub = ete3.Tree(nwk)
             if len(t_sub) >= 3:
@@ -103,11 +105,16 @@ def split_tree(fn_tree, fn_msa, n_taxa, q_outgroup):
     # 4. Remove all the subtrees
     for n in t.traverse('preorder', is_leaf_fn=stop_fn):
         if n.name.startswith("PART."):
-            for ch in n:
-                ch.detach()
+            d = n.dist
+            name = n.name
+            p = n.up
+            p.remove_child(n)
+            new_node = p.add_child(name=name)
+            new_node.dist = d
     # print(sorted(sizes))
     t.write(outfile=fn_out_mega_pat)
-    t.unroot()
+    if len(t) > 2:
+        t.unroot()
     t.write(outfile=fn_out_mega_pat + ".unroot.tre")
     # print(fn_out_mega_pat)
     return n_profile
