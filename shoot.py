@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # import sys
+import re
 import argparse
 
 import og_assigner
@@ -11,7 +12,15 @@ import quartets_pairwise_align
 
 
 def main(d_db, infn, q_msa, q_print=False):
-    query_name, query_renamed, infn = rename_gene(infn)
+    # rapid check for FASTA format
+    ok = True
+    with open(infn, 'r') as infile:
+        ok = bool(re.match("^>.", next(infile))) 
+        ok = ok and bool(re.match("^[a-zA-Z]+$", next(infile))) 
+    if not ok:
+        print("ERROR: Input file should be FASTA format")
+        return
+
     og_assign = og_assigner.OGAssignDIAMOND(d_db)
     og_part = og_assign.assign(infn)
     if og_part is not None:
@@ -24,7 +33,7 @@ def main(d_db, infn, q_msa, q_print=False):
     if q_msa:
         # do a tree using an MSA
         graft = msa_grafter.MSAGrafter(d_db)
-        fn_tree, warn_str = graft.add_gene(og_part, infn, query_name, query_renamed)
+        fn_tree, warn_str = graft.add_gene(og_part, infn)
     else:
         quart = quartets_pairwise_align.PairwiseAlignQuartets(d_db, og_part, infn)
         search = tree_grafter.TreeGrafter(quart, d_db)
@@ -40,25 +49,6 @@ def main(d_db, infn, q_msa, q_print=False):
         with open(fn_tree, 'r') as infile:
             print(next(infile).rstrip())   # remove any trailing newline characters
     return fn_tree        
-
-
-def rename_gene(infn):
-    preface_str = "YdN3Z" # this will not occur in the shoot database
-    with open(infn, 'r') as infile:
-        acc = next(infile)
-        if acc.startswith(">"):
-            acc = acc[1:].rstrip()
-            acc_new = preface_str + acc
-        else:
-            acc = "Query"
-            acc_new = preface_str + acc
-        lines = [l for l in infile] # python incorrectly complains about readlines
-    fn_new = infn + ".rn.fa"
-    with open(fn_new, 'w') as outfile:
-        outfile.write(">" + acc_new + "\n")
-        for l in lines:
-            outfile.write(l)
-    return acc, acc_new, fn_new
 
 
 if __name__ == "__main__":
