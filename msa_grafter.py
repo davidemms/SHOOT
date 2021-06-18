@@ -26,6 +26,10 @@ class MSAGrafter(object):
             infn - FASTA filename containing the gene sequence
             name_orig - Gene name from user
             name_temp - Working gene name to prevent clash
+        Returns:
+            fn_final_tree - the filename for the output tree
+            query_name - the name of the query gene in the tree
+            warn_string - warnings string
         Notes:
             - If name_orig and name_temp are both not None, changes query name back
             to name_orig in the final tree
@@ -56,7 +60,7 @@ class MSAGrafter(object):
                 fn_final_tree = fn_msa_new + ".tre"
                 self.write_trivial_tree(genes, fn_final_tree)
                 warn_string = "Tree could not be rooted"
-                return fn_final_tree, warn_string
+                return fn_final_tree, query_name, warn_string
 
         # Rooting
         if not q_subtree:
@@ -71,7 +75,7 @@ class MSAGrafter(object):
             n_taxa_123many = n_seqs_orig_123many + 1
             nwk_sub, t_sup = self.root_subtree(og_part, n_taxa_123many, genes, fn_tree_new)
             fn_final_tree = self.reconstruct_super_tree(infn, og_part, t_sup, nwk_sub)
-        return fn_final_tree, warn_string
+        return fn_final_tree, query_name, warn_string
 
 
     def root_independent_tree(self, og_part, fn_tree_new, n_seqs_123many, iq_name_adjust):
