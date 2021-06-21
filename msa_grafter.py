@@ -222,10 +222,9 @@ class MSAGrafter(object):
         nwk_super = t_sup.write()
         nwk_sup_splits = nwk_super.split("PART.")
         nwk = nwk_sup_splits[0]
-        for c in nwk_sup_splits[1:-1]:
+        for c in nwk_sup_splits[1:]:
             i, remainder = c.split(":", 1)
             nwk += d_sub_nwks[int(i)] + remainder
-        nwk += nwk_sup_splits[-1]
         with open(fn_final_tree, 'w') as outfile:
             outfile.write(nwk + "\n")
         return
