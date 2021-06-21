@@ -95,15 +95,17 @@ def create_profiles_database(din, q_kmeans = True, n_for_profile=5, q_ids=True):
     fw = fasta_writer.FastaWriter(wd + "Species*fa", qGlob=True)
     seq_write = []
     seq_convert = dict()
-    print("WARNING: Check all gene names, can't start with '__'")
+    # print("WARNING: Check all gene names, can't start with '__'")
     # If there are subtrees then we need to convert their IDs in the profile file
     # back to internal IDs
     if q_ids:
         import ofids
-        ids = ofids.OrthoFinderIDs(wd).SequenceDict()
+        ids = ofids.OrthoFinderIDs(wd).Spec_SeqDict()
         ids_rev = {v:k for k,v in ids.items()}
     for iog, og in enumerate(ogs):
-        if iog % 10 == 0:
+        # if iog < 21775:
+        #     continue
+        if iog % 1000 == 0:
             print(iog)
         n = len(og)
         og_id = "%07d" % iog
@@ -112,17 +114,22 @@ def create_profiles_database(din, q_kmeans = True, n_for_profile=5, q_ids=True):
         # else:
         #     og_id = "%07d" % iog
         q_subtrees = os.path.exists(pat_super % iog)
+        fn_msa_unsplit = wd + "Alignments_ids/OG%07d.fa" % iog
+        fn_seq_unsplit = wd + "Sequences_ids/OG%07d.fa" % iog
         if q_subtrees:
             fns_msa = list(glob.glob(pat_sub_msa_glob % iog))
+        elif os.path.exists(fn_msa_unsplit):
+            fns_msa = [fn_msa_unsplit, ]
         else:
-            fns_msa = [wd + "Alignments_ids/OG%07d.fa" % iog, ]
+            fns_msa = [fn_seq_unsplit, ]
         for fn in fns_msa:
-            i_part = os.path.basename(fn).rsplit(".", 2)[1]
-            if q_kmeans:
+            i_part = os.path.basename(fn).rsplit(".", 2)[1] if q_subtrees else None
+            fw_temp = fasta_writer.FastaWriter(fn)
+            if q_kmeans and len(fw_temp.SeqLists) > n_for_profile:
                 if q_subtrees:
                     # MSA needs to be modified
                     fn_temp = "/tmp/shoot_db_create" + os.path.basename(fn)
-                    fw_temp = fasta_writer.FastaWriter(fn)
+                    
                     fw_temp.WriteSeqsToFasta([g for g in fw_temp.SeqLists if not g.startswith("SHOOTOUTGROUP_")],
                                             fn_temp)
                     fn = fn_temp
@@ -147,7 +154,7 @@ def create_profiles_database(din, q_kmeans = True, n_for_profile=5, q_ids=True):
         # re-write it for each OG so I can check it's going ok
         # print(seq_write)
         # print(list(fw.SeqLists.keys())[:10])
-        fw.WriteSeqsToFasta_withNewAccessions(seq_write, fn_fasta, seq_convert)
+    fw.WriteSeqsToFasta_withNewAccessions(seq_write, fn_fasta, seq_convert)
     subprocess.call(["diamond", "makedb", "--in", fn_fasta, "-d", fn_diamond_db])
 
 
