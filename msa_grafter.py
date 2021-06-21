@@ -211,14 +211,9 @@ class MSAGrafter(object):
                     # Either: "Monodelphis_domestica_A0A5F8H6S2:3.96746;""
                     # Or: ...295)1:0.04477;
                     # It needs to end ":"
-                    if this_nwk.startswith("("):
-                        while this_nwk[-1] != ")":
-                            this_nwk = this_nwk[:-1]
-                        this_nwk += "1:"
-                    else:
-                        while this_nwk[-1] != ":":
-                            this_nwk = this_nwk[:-1]
-                d_sub_nwks.append(this_nwk)
+                    while this_nwk[-1] != ":":
+                        his_nwk = this_nwk[:-1]
+                    d_sub_nwks.append(this_nwk)
         nwk_super = t_sup.write()
         nwk_sup_splits = nwk_super.split("PART.")
         nwk = nwk_sup_splits[0]
