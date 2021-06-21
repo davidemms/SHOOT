@@ -211,8 +211,9 @@ class MSAGrafter(object):
                     # Either: "Monodelphis_domestica_A0A5F8H6S2:3.96746;""
                     # Or: ...295)1:0.04477;
                     # It needs to end ":"
+                    # print((this_nwk[:10], this_nwk[-20:]))
                     while this_nwk[-1] != ":":
-                        his_nwk = this_nwk[:-1]
+                        this_nwk = this_nwk[:-1]
                     d_sub_nwks.append(this_nwk)
         nwk_super = t_sup.write()
         nwk_sup_splits = nwk_super.split("PART.")
@@ -274,7 +275,8 @@ class MSAGrafter(object):
         with open(fn_fasta, 'r') as infile:
             for l in infile:
                 if l.startswith(">"):
-                    genes.append(l[1:].rstrip())
+                    # only the first word
+                    genes.append(l[1:].rstrip().split()[0])
         return genes
 
 
