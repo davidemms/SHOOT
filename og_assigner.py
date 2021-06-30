@@ -63,11 +63,12 @@ class OGAssignDIAMOND(OGAssigner):
             subprocess.call(cmd_list,stdout=FNULL, stderr=FNULL)
         return fn_og_results_out + ".gz"
 
-    def og_from_diamond_results(self, fn_og_results_out):
+    def og_from_diamond_results(self, fn_og_results_out, q_ignore_sub = False):
         """
         Get the OG based on the DIAMOND results
         Args:
             fn_og_results_out - fn of compressed DIAMOND results
+            q_ignore_sub - ignore any subtrees and just look at overalll OGs
         Returns:
             iog        : str "int.int" or "int" otherwise None
         """
@@ -76,7 +77,8 @@ class OGAssignDIAMOND(OGAssigner):
         with gzip.open(fn_og_results_out, 'rt') as infile:
             reader = csv.reader(infile, delimiter="\t")
             for l in reader:
-                ogs.append(l[1].split("_")[0])
+                og = l[1].split("_")[0]
+                ogs.append(og.split(".",1)[0] if q_ignore_sub else og)
                 scores.append(float(l[-2]))
         sortedTuples = sorted(zip(scores, ogs))
         scores = [i for i, j in sortedTuples]
