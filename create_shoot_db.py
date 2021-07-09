@@ -11,11 +11,6 @@ import fasta_writer
 import sample_genes
 
 
-def run(din):
-    # 1. Create diamond profile for orthogroup assignment
-    create_profiles_database(din)
-
-
 def get_orthogroups(clustersFilename):
     """
     Read orthogroups from file
@@ -73,13 +68,14 @@ def sample_random(og, n_max):
     return random.sample(og, min(n_max, len(og)))
 
 
-def create_profiles_database(din, q_kmeans = True, n_for_profile=5, q_ids=True):
+def create_profiles_database(din, q_kmeans = True, n_for_profile=5, q_ids=True, subtrees_dir="Gene_Trees/subtrees_2000"):
     """
     Create a fasta file with profile genes from each orthogroup
     Args:
         din - Input OrthoFinder results directory
         n_for_profile - The number of genes to use from each orthogroup, when available
         q_kmeans - Should kmeans be used instead of random sampling
+        q_ids - Convert subtrees (with user gene accessions) back to IDs for profiles database (should always be true I think)
     Notes:
     If the trees have been split into subtres then profiles will be created for 
     the subtrees instead.
@@ -87,9 +83,10 @@ def create_profiles_database(din, q_kmeans = True, n_for_profile=5, q_ids=True):
     directory suitable for use by SHOOT. Each sequence is named <OG>_isp_iseq.
     """
     wd = din + "WorkingDirectory/"
-    pat_super = din + "Gene_Trees/subtrees/super/OG%07d.super.tre"
-    pat_sub_msa_glob = din + "Gene_Trees/subtrees/msa_sub/OG%07d.*.fa"
-    fn_fasta = din + "diamond_profile_sequences.new.fa"
+    subtrees_label = os.path.split(subtrees_dir)[1]
+    pat_super = din + subtrees_dir + "/super/OG%07d.super.tre"
+    pat_sub_msa_glob = din + subtrees_dir + "/msa_sub/OG%07d.*.fa"
+    fn_fasta = din + "diamond_profile_sequences.%s.%d_%s.fa" % (subtrees_label, n_for_profile, "kmeans" if q_kmeans else "random")
     fn_diamond_db = fn_fasta + ".db"
     ogs = get_orthogroups(wd + "clusters_OrthoFinder_I1.5.txt_id_pairs.txt")
     fw = fasta_writer.FastaWriter(wd + "Species*fa", qGlob=True)
@@ -101,9 +98,11 @@ def create_profiles_database(din, q_kmeans = True, n_for_profile=5, q_ids=True):
     if q_ids:
         import ofids
         ids = ofids.OrthoFinderIDs(wd).Spec_SeqDict()
+        # ids = ofids.OrthoFinderIDs(wd).SequenceDict()
+        # print(ids['28_14289'])
         ids_rev = {v:k for k,v in ids.items()}
     for iog, og in enumerate(ogs):
-        # if iog < 21775:
+        # if iog < 28 or iog > 29:
         #     continue
         if iog % 1000 == 0:
             print(iog)
@@ -114,6 +113,7 @@ def create_profiles_database(din, q_kmeans = True, n_for_profile=5, q_ids=True):
         # else:
         #     og_id = "%07d" % iog
         q_subtrees = os.path.exists(pat_super % iog)
+        # print(pat_super % iog)
         fn_msa_unsplit = wd + "Alignments_ids/OG%07d.fa" % iog
         fn_seq_unsplit = wd + "Sequences_ids/OG%07d.fa" % iog
         if q_subtrees:
@@ -162,4 +162,4 @@ if __name__ == "__main__":
     din = sys.argv[1]
     if not din.endswith("/"):
         din += "/"
-    run(din)
+    create_profiles_database(din)

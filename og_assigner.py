@@ -26,8 +26,9 @@ class OGAssignDIAMOND(OGAssigner):
     """
     Assign using DIAMOND
     """
-    def __init__(self, d_db):
+    def __init__(self, d_db, profiles_db_name="diamond_profile_sequences.fa.db.dmnd"):
         self.d_db = d_db
+        self.profiles_db_name = profiles_db_name
 
     def assign(self, infn):
         """
@@ -54,7 +55,7 @@ class OGAssignDIAMOND(OGAssigner):
         Returns:
             fn_og_results_out - DIAMOND results filename
         """
-        fn_db = self.d_db + "diamond_profile_sequences.fa.db.dmnd"
+        fn_db = self.d_db + self.profiles_db_name
         fn_og_results_out = fn_out_base + ".sh.ogs.txt"
         with open(os.devnull, 'w') as FNULL:
             cmd_list = ["diamond", "blastp", "-d", fn_db, "-q", fn_query, "-o", fn_og_results_out, "--quiet", "-e", "0.001", "--compress", "1"]
@@ -68,7 +69,7 @@ class OGAssignDIAMOND(OGAssigner):
         Get the OG based on the DIAMOND results
         Args:
             fn_og_results_out - fn of compressed DIAMOND results
-            q_ignore_sub - ignore any subtrees and just look at overalll OGs
+            q_ignore_sub - ignore any subtrees and just look at overall OGs
         Returns:
             iog        : str "int.int" or "int" otherwise None
         """
