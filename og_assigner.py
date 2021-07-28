@@ -30,7 +30,7 @@ class OGAssignDIAMOND(OGAssigner):
         self.d_db = d_db
         self.profiles_db_name = profiles_db_name
 
-    def assign(self, infn):
+    def assign(self, infn, q_ultra_sens=False):
         """
         Assign a sequence to an orthogroup
         Args:
@@ -38,9 +38,9 @@ class OGAssignDIAMOND(OGAssigner):
         Returns
             iog - index of OG
         """
-        fn_results = self.run_diamond(infn, infn)
+        fn_results = self.run_diamond(infn, infn, q_ultra_sens=q_ultra_sens)
         iog = self.og_from_diamond_results(fn_results)
-        if iog is None:
+        if not q_ultra_sens and iog is None:
             # Try again with a more sensitive search
             fn_results = self.run_diamond(infn, infn, q_ultra_sens=True)
             iog = self.og_from_diamond_results(fn_results)
