@@ -6,6 +6,7 @@ import os
 import sys
 import random
 import subprocess
+import string
 
 import fasta_writer
 import sample_genes
@@ -68,7 +69,7 @@ def sample_random(og, n_max):
     return random.sample(og, min(n_max, len(og)))
 
 
-def create_profiles_database(din, q_kmeans = True, n_for_profile=5, q_ids=True, subtrees_dir="Gene_Trees/subtrees_2000"):
+def create_profiles_database(din, q_kmeans = True, min_for_profile=20, q_ids=True, divide= 10, subtrees_dir="Gene_Trees/subtrees_2000"):
     """
     Create a fasta file with profile genes from each orthogroup
     Args:
@@ -86,7 +87,8 @@ def create_profiles_database(din, q_kmeans = True, n_for_profile=5, q_ids=True, 
     subtrees_label = os.path.split(subtrees_dir)[1]
     pat_super = din + subtrees_dir + "/super/OG%07d.super.tre"
     pat_sub_msa_glob = din + subtrees_dir + "/msa_sub/OG%07d.*.fa"
-    fn_fasta = din + "diamond_profile_sequences.%s.%d_%s.fa" % (subtrees_label, n_for_profile, "kmeans" if q_kmeans else "random")
+    # fn_fasta = din + "diamond_profile_sequences.%s.%d_%s.fa" % (subtrees_label, n_for_profile, "kmeans" if q_kmeans else "random")
+    fn_fasta = din + "diamond_profile_sequences.%s.d%d_min%d_%s.fa" % (subtrees_label, divide, min_for_profile, "kmeans" if q_kmeans else "random")
     fn_diamond_db = fn_fasta + ".db"
     ogs = get_orthogroups(wd + "clusters_OrthoFinder_I1.5.txt_id_pairs.txt")
     fw = fasta_writer.FastaWriter(wd + "Species*fa", qGlob=True)
@@ -125,10 +127,14 @@ def create_profiles_database(din, q_kmeans = True, n_for_profile=5, q_ids=True, 
         for fn in fns_msa:
             i_part = os.path.basename(fn).rsplit(".", 2)[1] if q_subtrees else None
             fw_temp = fasta_writer.FastaWriter(fn)
+            n_in_og = len(fw_temp.SeqLists)
+            n_for_profile = n_in_og // divide
+            n_for_profile = min_for_profile if n_for_profile < min_for_profile else n_for_profile
             if q_kmeans and len(fw_temp.SeqLists) > n_for_profile:
                 if q_subtrees:
-                    # MSA needs to be modified
-                    fn_temp = "/tmp/shoot_db_create" + os.path.basename(fn)
+                    # MSA needs to be modified    
+                    letters = string.ascii_lowercase
+                    fn_temp = "/tmp/shoot_db_create" + "".join(random.choice(letters) for i in range(6)) + os.path.basename(fn)
                     
                     fw_temp.WriteSeqsToFasta([g for g in fw_temp.SeqLists if not g.startswith("SHOOTOUTGROUP_")],
                                             fn_temp)
