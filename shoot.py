@@ -8,17 +8,21 @@ import argparse
 import og_assigner
 import tree_grafter
 import msa_grafter
+import msa_grafter_epa
 import quartets_pairwise_align
 
 import ete3
 
-def main(d_db, infn, q_msa, nU, nL, q_print=False):
+def main(d_db, infn, q_msa, nU, nL, tree_method, q_print=False):
     """
     Run SHOOT
     Args:
         d_db - Input directory containing SHOOT database
         infn - Query FASTA filename
         q_msa - Use MSA method for tree inference
+        nU - Upper limit for tree, unless nL is not None
+        nL - Exceed nU if alternative is a tree < nL
+        tree_method - method to use for tree inference
     Returns:
         fn_tree - Filename for tree or None
     """
@@ -42,7 +46,13 @@ def main(d_db, infn, q_msa, nU, nL, q_print=False):
     warn_str = ""
     if q_msa:
         # do a tree using an MSA
-        graft = msa_grafter.MSAGrafter(d_db)
+        if "iqtree" == tree_method:
+            graft = msa_grafter.MSAGrafter(d_db)
+        elif "epa" == tree_method:
+            graft = msa_grafter_epa.MSAGrafter_EPA(d_db)
+        else:
+            print("ERROR: %s method has not been implemented" % tree_method)
+            return
         fn_tree, query_gene, warn_str = graft.add_gene(og_part, infn)
     else:
         quart = quartets_pairwise_align.PairwiseAlignQuartets(d_db, og_part, infn)
@@ -90,5 +100,6 @@ if __name__ == "__main__":
     parser.add_argument("-u", "--upper", type=int, help= "Upper limit for tree, unless -l")
     parser.add_argument("-l", "--lower", type=int, help= "Exceed -u if alternative is < -l")
     parser.add_argument("-p", "--print_tree", action="store_true", help= "Print tree as final line")
+    parser.add_argument("-t", "--tree_method", default="epa", choices={"epa", "iqtree"})
     args = parser.parse_args()
-    main(args.db, args.infile, args.msa, args.upper, args.lower, args.print_tree)
+    main(args.db, args.infile, args.msa, args.upper, args.lower, args.tree_method, args.print_tree)

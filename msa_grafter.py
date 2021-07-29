@@ -1,6 +1,6 @@
 """
-Add the new sequence to an existing MSA and then infer the tree from that. If possible
-use the original tree as a start point - but not sure if I've got anything that can do this.
+Add the new sequence to an existing MSA and then infer the tree from that. Use the 
+original tree as a start point.
 """
 import os
 import shutil
@@ -56,7 +56,7 @@ class MSAGrafter(object):
         fn_msa_new = infn + ".sh.msa.fa"
         subprocess.call("mafft --retree 1 --maxiterate 0 --nofft --thread 16 --quiet --add %s %s > %s" % (fn_input_to_msa, fn_msa_orig, fn_msa_new), shell=True)
         if n_seqs_orig_123many >= 3:
-            fn_tree_new = self.run_iqtree(og_part, n_seqs_orig_123many, fn_msa_new, q_subtree)
+            fn_tree_new = self.run_tree_inference(og_part, n_seqs_orig_123many, fn_msa_new, q_subtree)
         else:
             if not q_subtree:
                 self.write_trivial_tree(genes, fn_final_tree)
@@ -226,6 +226,10 @@ class MSAGrafter(object):
         return
 
 
+    def run_tree_inference(self, og_part, n_seqs_123many, fn_msa, q_subtree):
+        return self.run_iqtree(og_part, n_seqs_123many, fn_msa, q_subtree)
+
+
     def run_iqtree(self, og_part, n_seqs_123many, fn_msa, q_subtree):
         """
         Run IQTREE
@@ -256,7 +260,7 @@ class MSAGrafter(object):
             subprocess.call("iqtree -nt 32 -quiet -m LG -fast -redo -g %s -s %s" % (fn_unrooted, fn_msa), shell=True)
             fn_tree_new = fn_msa + ".treefile"
         elif n_seqs_123many == 3:
-            # have minimum number of sequences for a tree, by no original tree
+            # have minimum number of sequences for a tree, but no original tree
             subprocess.call("iqtree -nt 32 -quiet -m LG -fast -redo -s %s" % fn_msa, shell=True)
             fn_tree_new = fn_msa + ".treefile"
         return fn_tree_new
