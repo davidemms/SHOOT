@@ -38,7 +38,7 @@ def split_tree(fn_tree, fn_msa, n_taxa, q_outgroup):
     d, fn = os.path.split(fn_tree)
     if d == "":
         d = "./"
-    dout_main = d + "/subtrees/"
+    dout_main = d + "/subtrees_%d/" % n_taxa
     d_out_sup = dout_main + "super/"
     d_out_sub = dout_main + "sub/"
     d_out_msa_sub = dout_main + "msa_sub/"
