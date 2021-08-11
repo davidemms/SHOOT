@@ -206,14 +206,18 @@ class MSAGrafter(object):
                     this_nwk = next(infile).rstrip()
                     assert(this_nwk.endswith(";"))
                     this_nwk = this_nwk[:-1]
-                    # each will have a distance on its root that is duplicated 
-                    # in the super tree
-                    # Either: "Monodelphis_domestica_A0A5F8H6S2:3.96746;""
-                    # Or: ...295)1:0.04477;
-                    # It needs to end ":"
-                    # print((this_nwk[:10], this_nwk[-20:]))
-                    while this_nwk[-1] != ":":
-                        this_nwk = this_nwk[:-1]
+                    if this_nwk.endswith(")"):
+                        # no support value
+                        this_nwk += "1:"
+                    else:
+                        # each will have a distance on its root that is duplicated 
+                        # in the super tree
+                        # Either: "Monodelphis_domestica_A0A5F8H6S2:3.96746;"
+                        # Or: ...295)1:0.04477;
+                        # It needs to end ":"
+                        # print((this_nwk[:10], this_nwk[-20:]))
+                        while this_nwk[-1] != ":":
+                            this_nwk = this_nwk[:-1]
                     d_sub_nwks.append(this_nwk)
         nwk_super = t_sup.write()
         nwk_sup_splits = nwk_super.split("PART.")
