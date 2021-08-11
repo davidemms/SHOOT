@@ -54,7 +54,7 @@ class MSAGrafter(object):
             fn_input_to_msa = infn
         genes.append(query_name)
         fn_msa_new = infn + ".sh.msa.fa"
-        subprocess.call("mafft --retree 1 --maxiterate 0 --nofft --thread 16 --quiet --add %s %s > %s" % (fn_input_to_msa, fn_msa_orig, fn_msa_new), shell=True)
+        subprocess.call("mafft --anysymbol --retree 1 --maxiterate 0 --nofft --thread 16 --quiet --add %s %s > %s" % (fn_input_to_msa, fn_msa_orig, fn_msa_new), shell=True)
         if n_seqs_orig_123many >= 3:
             fn_tree_new = self.run_tree_inference(og_part, n_seqs_orig_123many, fn_msa_new, q_subtree)
         else:
