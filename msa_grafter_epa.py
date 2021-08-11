@@ -17,6 +17,7 @@ import msa_grafter
 class MSAGrafter_EPA(msa_grafter.MSAGrafter):
     def __init__(self, *args, **kwargs):
         super(MSAGrafter_EPA, self).__init__(*args, **kwargs)
+        self.re_disallowed_seq_chars = re.compile("[^-ABCDEFGHIKLMNPQRSTVWYZ]")
 
     def run_tree_inference(self, og_part, n_seqs_123many, fn_msa, q_subtree):
         """
@@ -112,6 +113,8 @@ class MSAGrafter_EPA(msa_grafter.MSAGrafter):
                 if l.startswith(">"):
                     out_ref.write(lines)
                     lines = ""
+                else:
+                    l = re.sub(self.re_disallowed_seq_chars, '-', l)
                 lines += l
             out_query.write(lines)
         return fn_ref, fn_query
