@@ -26,6 +26,7 @@ def main(d_db, infn, q_msa, nU, nL, tree_method, q_print=False):
     Returns:
         fn_tree - Filename for tree or None
     """
+    d_db += "/"
     # rapid check for FASTA format
     ok = True
     with open(infn, 'r') as infile:

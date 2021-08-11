@@ -69,7 +69,59 @@ def sample_random(og, n_max):
     return random.sample(og, min(n_max, len(og)))
 
 
-def create_profiles_database(din, q_kmeans = True, min_for_profile=20, q_ids=True, divide= 10, subtrees_dir="Gene_Trees/subtrees_2000"):
+def create_mmseqs_database(din, subtrees_dir="Gene_Trees/subtrees_2000"):
+    """
+    Create a stockholm file of all the MSA
+    Args:
+        din - Input OrthoFinder results directory
+        subtrees_dir - directory containing the split trees to use
+    Notes:
+    If the trees have been split into subtres then profiles will be created for 
+    the subtrees instead.
+    """
+    wd = din + "WorkingDirectory/"
+    subtrees_label = os.path.split(subtrees_dir)[1]
+    pat_super = din + subtrees_dir + "/super/OG%07d.super.tre"
+    pat_sub_msa_glob = din + subtrees_dir + "/msa_sub/OG%07d.*.fa"
+    fn_stockholm = din + "all_msa.%s.sto" % subtrees_label
+    fn_mmseqs_db = fn_stockholm + ".db"
+    ogs = get_orthogroups(wd + "clusters_OrthoFinder_I1.5.txt_id_pairs.txt")
+    seq_write = []
+    seq_convert = dict()
+    # delete the existing file
+    with open(fn_stockholm, 'w') as outfile:
+        pass
+    for iog, og in enumerate(ogs):
+        # if iog < 20 or iog > 29:
+        #     continue
+        if iog % 10000 == 0:
+            print(iog)
+        n = len(og)
+        og_id = "%07d" % iog
+        q_subtrees = os.path.exists(pat_super % iog)
+        fn_msa_unsplit = din + "MultipleSequenceAlignments/OG%07d.fa" % iog
+        fn_seq_unsplit = din + "Orthogroup_Sequences/OG%07d.fa" % iog
+        if q_subtrees:
+            fns_msa = list(glob.glob(pat_sub_msa_glob % iog))
+        elif os.path.exists(fn_msa_unsplit):
+            fns_msa = [fn_msa_unsplit, ]
+        else:
+            fns_msa = [fn_seq_unsplit, ]
+        for fn in fns_msa:
+            i_part = os.path.basename(fn).rsplit(".", 2)[1] if q_subtrees else None
+            fw_temp = fasta_writer.FastaWriter(fn)
+            if q_subtrees:
+                og = [g for g in fw_temp.SeqLists if not g.startswith("SHOOTOUTGROUP_")]
+                og_id_full = og_id + "." + i_part
+            else:
+                og = None
+                og_id_full = og_id
+            fw_temp.AppendToStockholm(og_id_full, fn_stockholm, og)
+    # subprocess.call(["diamond", "makedb", "--in", fn_fasta, "-d", fn_diamond_db])
+
+
+def create_profiles_database(din, q_kmeans = True, min_for_profile=20, q_ids=True, divide= 10, 
+                            subtrees_dir="Gene_Trees/subtrees_2000"):
     """
     Create a fasta file with profile genes from each orthogroup
     Args:
@@ -104,7 +156,7 @@ def create_profiles_database(din, q_kmeans = True, min_for_profile=20, q_ids=Tru
         # print(ids['28_14289'])
         ids_rev = {v:k for k,v in ids.items()}
     for iog, og in enumerate(ogs):
-        # if iog < 28 or iog > 29:
+        # if iog < 21 or iog > 22:
         #     continue
         if iog % 1000 == 0:
             print(iog)
@@ -115,6 +167,7 @@ def create_profiles_database(din, q_kmeans = True, min_for_profile=20, q_ids=Tru
         # else:
         #     og_id = "%07d" % iog
         q_subtrees = os.path.exists(pat_super % iog)
+        if q_subtrees: print("Subtrees: %d" % iog)
         # print(pat_super % iog)
         fn_msa_unsplit = wd + "Alignments_ids/OG%07d.fa" % iog
         fn_seq_unsplit = wd + "Sequences_ids/OG%07d.fa" % iog
@@ -122,8 +175,6 @@ def create_profiles_database(din, q_kmeans = True, min_for_profile=20, q_ids=Tru
             fns_msa = list(glob.glob(pat_sub_msa_glob % iog))
         elif os.path.exists(fn_msa_unsplit):
             fns_msa = [fn_msa_unsplit, ]
-        else:
-            fns_msa = [fn_seq_unsplit, ]
         for fn in fns_msa:
             i_part = os.path.basename(fn).rsplit(".", 2)[1] if q_subtrees else None
             fw_temp = fasta_writer.FastaWriter(fn)
@@ -168,4 +219,11 @@ if __name__ == "__main__":
     din = sys.argv[1]
     if not din.endswith("/"):
         din += "/"
-    create_profiles_database(din)
+    # create_mmseqs_database(din)
+    create_profiles_database(din, 
+                            q_kmeans = True, 
+                            min_for_profile=20, 
+                            q_ids=True, 
+                            divide= 10, 
+                            subtrees_dir="Gene_Trees/subtrees_2000")
+

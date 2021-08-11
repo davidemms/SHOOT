@@ -137,12 +137,12 @@ if __name__ == "__main__":
     parser.add_argument("tree", help="Input tree file")
     parser.add_argument("msa", help="Input MSA file")
     parser.add_argument("-n", "--ntaxa", help="Number of taxa to aim for for each subtree", type=int, default=500)
-    parser.add_argument("-o", "--outgroup", action="store_true",
-                        help="Include an outgroup gene in each subtree. Required for SHOOT", )
+    # parser.add_argument("-o", "--outgroup", action="store_true",
+                        # help="Include an outgroup gene in each subtree. Required for SHOOT", )
     args = parser.parse_args()
     split_tree(args.tree, 
                 args.msa, 
                 args.ntaxa, 
-                q_outgroup=args.outgroup)
+                q_outgroup=True)
 
     # count_profiles()
