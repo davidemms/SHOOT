@@ -13,6 +13,10 @@ import quartets_pairwise_align
 
 import ete3
 
+
+gene_name_disallowed_chars_re = '[^A-Za-z0-9_\\-.]'
+
+
 def main(d_db, infn, q_msa, nU, nL, tree_method, q_print=False):
     """
     Run SHOOT
@@ -30,14 +34,17 @@ def main(d_db, infn, q_msa, nU, nL, tree_method, q_print=False):
     # rapid check for FASTA format
     ok = True
     with open(infn, 'r') as infile:
-        ok = bool(re.match("^>.", next(infile))) 
+        acc = next(infile)
+        ok = bool(re.match("^>.", acc)) 
         ok = ok and bool(re.match("^[a-zA-Z]+$", next(infile))) 
     if not ok:
         print("ERROR: Input file should be FASTA format")
         return
+    # now fix up accession if required
+    fn_for_use = clean_fasta(infn)
 
     og_assign = og_assigner.OGAssignDIAMOND(d_db)
-    og_part = og_assign.assign(infn)
+    og_part = og_assign.assign(fn_for_use)
     if og_part is not None:
         print("Gene assigned to: OG%s" % og_part)
     else:
@@ -54,9 +61,9 @@ def main(d_db, infn, q_msa, nU, nL, tree_method, q_print=False):
         else:
             print("ERROR: %s method has not been implemented" % tree_method)
             return
-        fn_tree, query_gene, warn_str = graft.add_gene(og_part, infn)
+        fn_tree, query_gene, warn_str = graft.add_gene(og_part, fn_for_use, infn)
     else:
-        quart = quartets_pairwise_align.PairwiseAlignQuartets(d_db, og_part, infn)
+        quart = quartets_pairwise_align.PairwiseAlignQuartets(d_db, og_part, fn_for_use)
         search = tree_grafter.TreeGrafter(quart, d_db)
         # This doesn't feel right, iog is fixed in the constructor of quart and hence
         # in the constructor of search, and yet is passed as a variable here.
@@ -91,6 +98,30 @@ def main(d_db, infn, q_msa, nU, nL, tree_method, q_print=False):
         with open(fn_tree, 'r') as infile:
             print(next(infile).rstrip())   # remove any trailing newline characters
     return fn_tree        
+
+
+def clean_fasta(infn):
+    """
+    If the accession contains problematic characters write a new file and return
+    its filename, otherwise return the original filename
+    Args:
+        infn - User input filename
+    Returns:
+        fn_for_use - file to use going forward for SHOOT
+    """
+    with open(infn, 'r') as infile:
+        acc = next(infile)
+        name = acc.rstrip()[1:]
+        name_cleaned = re.sub(gene_name_disallowed_chars_re, '_', name)
+        if name == name_cleaned:
+            return infn
+        # otherwise, need to create a new file
+        fn_for_use = infn + ".sh.cleaned"
+        with open(fn_for_use, 'w') as outfile:
+            outfile.write(">%s\n" % name_cleaned)
+            for l in infile:
+                outfile.write(l)
+        return fn_for_use
 
 
 if __name__ == "__main__":

@@ -24,11 +24,16 @@ class OGAssigner_mmseqs(og_assigner.OGAssigner):
         Returns
             iog - index of OG
         """
-        fn_results = self.run_mmseqs(infn, infn, q_ultra_sens=q_ultra_sens)
+        ext_cleaned = ".sh.cleaned"
+        if infn.endswith(ext_cleaned):
+            fn_base = infn.replace(ext_cleaned, "")
+        else:
+            fn_base = infn
+        fn_results = self.run_mmseqs(infn, fn_base, q_ultra_sens=q_ultra_sens)
         iog = self.og_from_mmseqs_results(fn_results)
         if not q_ultra_sens and iog is None:
             # Try again with a more sensitive search
-            fn_results = self.run_mmseqs(infn, infn, q_ultra_sens=True)
+            fn_results = self.run_mmseqs(infn, fn_base, q_ultra_sens=True)
             iog = self.og_from_mmseqs_results(fn_results)
         return iog
     

@@ -20,13 +20,12 @@ class MSAGrafter(object):
         self.db = database.Database(d_db)
 
 
-    def add_gene(self, og_part, infn, method = "iqtree"):
+    def add_gene(self, og_part, infn, fn_out_base, method = "iqtree"):
         """
         Args:
             og_part - the OG or OG.PART to search in
             infn - FASTA filename containing the gene sequence
-            name_orig - Gene name from user
-            name_temp - Working gene name to prevent clash
+            fn_out_base - filenname onto which to build output files 
         Returns:
             fn_final_tree - the filename for the output tree
             query_name - the name of the query gene in the tree
@@ -36,7 +35,7 @@ class MSAGrafter(object):
             to name_orig in the final tree
         """
         q_subtree = "." in og_part
-        fn_final_tree = infn + ".shoot.tre"
+        fn_final_tree = fn_out_base + ".shoot.tre"
         warn_string = ""
         fn_msa_orig = self.db.fn_msa(og_part)
         # if not os.path.exists(fn_msa_orig):
@@ -53,7 +52,7 @@ class MSAGrafter(object):
         else:
             fn_input_to_msa = infn
         genes.append(query_name)
-        fn_msa_new = infn + ".sh.msa.fa"
+        fn_msa_new = fn_out_base + ".sh.msa.fa"
         subprocess.call("mafft --anysymbol --retree 1 --maxiterate 0 --nofft --thread 16 --quiet --add %s %s > %s" % (fn_input_to_msa, fn_msa_orig, fn_msa_new), shell=True)
         if n_seqs_orig_123many >= 3:
             fn_tree_new = self.run_tree_inference(og_part, n_seqs_orig_123many, fn_msa_new, q_subtree)

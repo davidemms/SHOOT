@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""
+Steps to fix up datasets:
+1. Gene IDs, detailed elsewhere, but should put it here
+2. EPA requires bifurcating trees. See bifurcating_trees.py
+3. IQTREE: must eliminate sequences that are all gaps.
+"""
+
 import glob
 import os
 import sys
@@ -225,5 +232,6 @@ if __name__ == "__main__":
                             min_for_profile=20, 
                             q_ids=True, 
                             divide= 10, 
-                            subtrees_dir="Gene_Trees/subtrees_2000")
+                            # subtrees_dir="Gene_Trees/subtrees_2000")
+                            subtrees_dir="Gene_Trees_iqtree/subtrees_2000")
 
