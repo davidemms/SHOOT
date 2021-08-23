@@ -38,8 +38,9 @@ class MSAGrafter(object):
         fn_final_tree = fn_out_base + ".shoot.tre"
         warn_string = ""
         fn_msa_orig = self.db.fn_msa(og_part)
-        # if not os.path.exists(fn_msa_orig):
-        #     fn_msa_orig = self.db.fn_seqs(iog)
+        if not os.path.exists(fn_msa_orig):
+            # then it's a single-gene group, 
+            fn_msa_orig = self.db.fn_seqs(og_part)
         n_seqs_orig_123many = self.n_seqs_1234(fn_msa_orig)
         genes = self.get_gene_names(fn_msa_orig)
         

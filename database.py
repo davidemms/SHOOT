@@ -50,5 +50,6 @@ class Database(object):
         return self.d_db + "Gene_Trees/subtrees/sub/OG%07d.%d.without.tre" % (iog, ipart)
 
         
-    def fn_seqs(self, iog):
-        return self.d_db + "Orthogroup_Sequences/OG%07d.fa" % iog
+    def fn_seqs(self, og_part):
+        og = og_part.split(".")[0]
+        return self.d_db + "Orthogroup_Sequences/OG%s.fa" % og
