@@ -57,6 +57,13 @@ def split_tree(fn_tree, fn_msa, n_taxa, q_outgroup):
         # print("No need to split tree")
         return min(5, len(t))
     # traverse tree
+    all_genes_in_tree = set(t.get_leaf_names())
+    all_genes_in_msa = set(fw.SeqLists.keys())
+    if all_genes_in_tree != all_genes_in_msa:
+        print("WARNING, gene mismatch. %d genes in tree, %d unique, %d in MSA" % (len(t), len(all_genes_in_tree), len(all_genes_in_msa)))
+        for g in all_genes_in_tree.difference(all_genes_in_msa):
+            print(g)
+        t.prune(all_genes_in_msa)
     sizes = []
     stop_fn = lambda node : len(node) <= n_taxa
     for n in t.traverse("preorder", is_leaf_fn = stop_fn):

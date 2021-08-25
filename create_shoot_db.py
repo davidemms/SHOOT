@@ -99,7 +99,7 @@ def create_mmseqs_database(din, subtrees_dir="Gene_Trees/subtrees_2000"):
     with open(fn_stockholm, 'w') as outfile:
         pass
     for iog, og in enumerate(ogs):
-        # if iog < 20 or iog > 29:
+        # if iog < 2:
         #     continue
         if iog % 10000 == 0:
             print(iog)
@@ -164,6 +164,8 @@ def create_profiles_database(din, q_kmeans = True, min_for_profile=20, q_ids=Tru
         ids_rev = {v:k for k,v in ids.items()}
     for iog, og in enumerate(ogs):
         # if iog < 21 or iog > 22:
+        #     continue
+        # if iog > 2:
         #     continue
         if iog % 1000 == 0:
             print(iog)
@@ -233,5 +235,5 @@ if __name__ == "__main__":
                             q_ids=True, 
                             divide= 10, 
                             # subtrees_dir="Gene_Trees/subtrees_2000")
-                            subtrees_dir="Gene_Trees_iqtree/subtrees_2000")
+                            subtrees_dir="Gene_Trees/subtrees_2000")
 
