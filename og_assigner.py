@@ -89,33 +89,8 @@ class OGAssignDIAMOND(OGAssigner):
         sortedTuples = sorted(zip(scores, ogs))
         scores = [i for i, j in sortedTuples]
         ogs = [j for i, j in sortedTuples]
-        c = Counter(ogs[:5])
-        # Easy cases
-        if len(c) == 0:
+        if len(ogs) == 0:
             # no match
             return None
-        elif len(c) == 1:
-            # unique match
-            og, _ = c.most_common(1)[0]
-            if og.startswith("x"):
-                # used to indicate 3 or fewer genes
-                og = og[1:]
-            return og
-        
-        # Otherwise, decide between the cases
-        a, b = c.most_common(2)
-        if a[1] > 2:
-            og = a[0]
-        elif b[1] == 2:
-            # we have a tie, get the highest scoring of the two
-            og = next(r for r in ogs if (r == a[0] or r == b[0]))
-        elif a[1] == 2:
-            # a is still the winner
-            og = a[0]
         else:
-            # all scored 1, get the highest scoring
-            og = next(r for r in ogs if (r == a[0] or r == b[0]))
-        if og.startswith("x"):
-            return og[1:]
-        else:
-            return og
+            return ogs[0]
