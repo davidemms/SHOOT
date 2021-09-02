@@ -66,7 +66,7 @@ class MSAGrafter(object):
         # Rooting
         if not q_subtree:
             # Based on previous outgroup
-            warn_string_root = self.root_independent_tree(og_part, fn_final_tree, fn_tree_new, n_seqs_orig_123many, method == "iqtree")
+            warn_string_root, nwk_str = self.root_independent_tree(og_part, fn_tree_new, n_seqs_orig_123many, method == "iqtree")
             if warn_string != "":
                 warn_string = "\n" + warn_string
             else:
@@ -75,26 +75,35 @@ class MSAGrafter(object):
             # Rooting for case of subtrees
             n_taxa_123many = n_seqs_orig_123many + 1
             nwk_sub, t_sup = self.root_subtree(og_part, n_taxa_123many, genes, fn_tree_new)
-            self.reconstruct_super_tree(fn_final_tree, og_part, t_sup, nwk_sub)
+            nwk_str = self.reconstruct_super_tree(og_part, t_sup, nwk_sub)
+        
+        if method == "iqtree":
+            query_name = self.iqtree_names_adjust([query_name, ])[0]
+        nwk_str = self.remove_support_for_gene_placement(nwk_str, query_name)
+        with open(fn_final_tree, 'w') as outfile:
+            outfile.write(nwk_str)
         return fn_final_tree, query_name, warn_string
 
 
-    def root_independent_tree(self, og_part, fn_final_tree, fn_tree_new, n_seqs_123many, iq_name_adjust):
+    def root_independent_tree(self, og_part, fn_tree_new, n_seqs_123many, iq_name_adjust):
         """
         Root a standalone tree using the outgroup from the original, rooted version
         Args:
             og_part - assigned OG str, either iog or iog.ipart
-            fn_final_tree - the filename to use for the final tree
             fn_tree_new - filename for tree with new sequence included 
             n_seqs_123many - Lower bound on number of taxa in tree, 1,2,3 or 4
             iq_name_adjust - Should names changes be accounted for when comparing 
                              trees based on iqtree changes
+        Returns:
+            warn_string - warnings
+            nwk_string - the newick string for the tree
         """
         if n_seqs_123many < 4:
             # no original tree to root with
             warn_string = "Tree could not be rooted"
-            shutil.copy(fn_tree_new, fn_final_tree)
-            return warn_string
+            with open(fn_tree_new, 'r') as infile:
+                nwk_str = infile.readline().rstrip()
+            return warn_string, nwk_str
 
         # Root the tree as it was previously rooted
         fn_tree_orig = self.db.fn_tree(og_part)
@@ -110,7 +119,7 @@ class MSAGrafter(object):
             outgroup_names = self.iqtree_names_adjust(outgroup_names)
         #print(outgroup_names)
 
-        t_new = ete3.Tree(fn_tree_new, format=1)
+        t_new = ete3.Tree(fn_tree_new, format=0)
         for n in t_new.traverse():
             if not n.is_leaf() and n.name != "":
                 try:
@@ -133,9 +142,9 @@ class MSAGrafter(object):
             root = t_new.get_common_ancestor(outgroup_names)
             if root != t_new:
                 t_new.set_outgroup(root)
-        # transfer_support_values(t_orig, t_new)
-        t_new.write(outfile=fn_final_tree)
-        return ""
+        # delete support value from new placement
+        t_new_str = t_new.write(format=0)
+        return "", t_new_str
 
 
     def root_subtree(self, og_part, n_taxa_3many, genes, fn_tree_new):
@@ -161,8 +170,9 @@ class MSAGrafter(object):
 
         iog, i_part_hit = list(map(int, og_part.split(".")))
         try:
-            t_sup = ete3.Tree(self.db.fn_tree_super(iog))
+            t_sup = ete3.Tree(self.db.fn_tree_super(iog), format=0)
         except ete3.parser.newick.NewickError:
+            print("WARNING: Could not read support values")
             t_sup = ete3.Tree(self.db.fn_tree_super(iog), format=1)
         parent_node_name = "PART." + og_part.split(".")[1]
         # now graft in the inferred gene tree
@@ -172,7 +182,7 @@ class MSAGrafter(object):
             genes = [g for g in genes if not g.startswith("SHOOTOUTGROUP")]
             nwk_sub = "(%s:%f,%s:%f)1:" % (genes[0], d, genes[1], d)
         elif n_taxa_3many >= 4:
-            t_new = ete3.Tree(fn_tree_new, format=1)
+            t_new = ete3.Tree(fn_tree_new, format=0)
             g_out = next(g for g in t_new.get_leaf_names() if g.startswith("SHOOTOUTGROUP"))
             t_new.set_outgroup(g_out)
             n = next(ch for ch in t_new.children if ch.name != g_out)
@@ -184,11 +194,48 @@ class MSAGrafter(object):
         return nwk_sub, t_sup
 
 
-    def reconstruct_super_tree(self, fn_final_tree, og_part, t_sup, nwk_sub):
+    @staticmethod
+    def remove_support_for_gene_placement(nwk_str, gene_name):
+        """
+        No bootstrap analysis has been done on placement of query gene so remove 
+        the support value incorrectly written by ete3 for its placement
+        Args:
+            nwk_str - the newick string
+            gene_name - the gene name
+        Info:
+            Traverse from query gene until finding its closing bracket. If extra
+            opening brackets are found during the traverse then theymust be closed first
+        """
+        n = len(nwk_str)
+        i = nwk_str.find(gene_name)
+        if i == -1:
+            # Error, gene should be in tree
+            return nwk_str
+        i += len(gene_name)
+        if i>=n:
+            # Error, gene name should be followed by more of the newick string
+            return nwk_str
+        exp_braces = 1
+        while i<n:
+            if nwk_str[i] == ")":
+                exp_braces -= 1
+            elif nwk_str[i] == "(":
+                exp_braces += 1
+            i+=1
+            if exp_braces == 0:
+                # found the location of the support value
+                break
+        i_rm0 = i
+        while nwk_str[i].isdigit() or nwk_str[i] == ".":
+            i+=1
+        nwk_str = nwk_str[:i_rm0] + nwk_str[i:]
+        return nwk_str
+
+
+    def reconstruct_super_tree(self, og_part, t_sup, nwk_sub):
         """
         Reconstruct the super-tree from its component subtrees
         Args:
-            fn_final_tree - filename to use for final tree
             og_part - the OG.PART the gene was assigned to
             t_sup - the super-tree with "PART.<I>
             nwk_sub - the Newick sub-string for the inferred subtree, ready to take
@@ -225,9 +272,7 @@ class MSAGrafter(object):
         for c in nwk_sup_splits[1:]:
             i, remainder = c.split(":", 1)
             nwk += d_sub_nwks[int(i)] + remainder
-        with open(fn_final_tree, 'w') as outfile:
-            outfile.write(nwk + "\n")
-        return
+        return nwk
 
 
     def run_tree_inference(self, og_part, n_seqs_123many, fn_msa, q_subtree):
