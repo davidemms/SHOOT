@@ -99,7 +99,7 @@ def create_mmseqs_database(din, subtrees_dir="Gene_Trees/subtrees_2000"):
     with open(fn_stockholm, 'w') as outfile:
         pass
     for iog, og in enumerate(ogs):
-        # if iog < 2:
+        # if iog < 20 or iog > 29:
         #     continue
         if iog % 10000 == 0:
             print(iog)
@@ -147,7 +147,7 @@ def create_profiles_database(din, q_kmeans = True, min_for_profile=20, q_ids=Tru
     pat_super = din + subtrees_dir + "/super/OG%07d.super.tre"
     pat_sub_msa_glob = din + subtrees_dir + "/msa_sub/OG%07d.*.fa"
     # fn_fasta = din + "diamond_profile_sequences.%s.%d_%s.fa" % (subtrees_label, n_for_profile, "kmeans" if q_kmeans else "random")
-    fn_fasta = din + "diamond_profile_sequences.%s.d%d_min%d_%s.fa" % (subtrees_label, divide, min_for_profile, "kmeans" if q_kmeans else "random")
+    fn_fasta = din + "diamond_profile_sequences.iqtree.%s.d%d_min%d_%s.fa" % (subtrees_label, divide, min_for_profile, "kmeans" if q_kmeans else "random")
     fn_diamond_db = fn_fasta + ".db"
     ogs = get_orthogroups(wd + "clusters_OrthoFinder_I1.5.txt_id_pairs.txt")
     fw = fasta_writer.FastaWriter(wd + "Species*fa", qGlob=True)
@@ -163,9 +163,10 @@ def create_profiles_database(din, q_kmeans = True, min_for_profile=20, q_ids=Tru
         # print(ids['28_14289'])
         ids_rev = {v:k for k,v in ids.items()}
     for iog, og in enumerate(ogs):
+        if not os.path.exists(din + subtrees_dir + "/../OG%07d_tree.txt" % iog):
+            print("Skipping %d" % iog)
+            continue
         # if iog < 21 or iog > 22:
-        #     continue
-        # if iog > 2:
         #     continue
         if iog % 1000 == 0:
             print(iog)
@@ -176,7 +177,10 @@ def create_profiles_database(din, q_kmeans = True, min_for_profile=20, q_ids=Tru
         # else:
         #     og_id = "%07d" % iog
         q_subtrees = os.path.exists(pat_super % iog)
-        if q_subtrees: print("Subtrees: %d" % iog)
+        if q_subtrees: 
+            print("Subtrees: %d" % iog)
+        else:
+            continue
         # print(pat_super % iog)
         fn_msa_unsplit = wd + "Alignments_ids/OG%07d.fa" % iog
         fn_seq_unsplit = wd + "Sequences_ids/OG%07d.fa" % iog
@@ -235,5 +239,6 @@ if __name__ == "__main__":
                             q_ids=True, 
                             divide= 10, 
                             # subtrees_dir="Gene_Trees/subtrees_2000")
-                            subtrees_dir="Gene_Trees/subtrees_2000")
+                            subtrees_dir="Gene_Trees_iqtree/subtrees_2000")
+
 
