@@ -9,7 +9,7 @@ import og_assigner
 import tree_grafter
 import msa_grafter
 import msa_grafter_epa
-import quartets_pairwise_align
+# import quartets_pairwise_align
 
 import ete3
 
@@ -63,12 +63,13 @@ def main(d_db, infn, q_msa, nU, nL, tree_method, q_print=False):
             return
         fn_tree, query_gene, warn_str = graft.add_gene(og_part, fn_for_use, infn)
     else:
-        quart = quartets_pairwise_align.PairwiseAlignQuartets(d_db, og_part, fn_for_use)
-        search = tree_grafter.TreeGrafter(quart, d_db)
+        raise Exception("Option not available")
+        # quart = quartets_pairwise_align.PairwiseAlignQuartets(d_db, og_part, fn_for_use)
+        # search = tree_grafter.TreeGrafter(quart, d_db)
         # This doesn't feel right, iog is fixed in the constructor of quart and hence
         # in the constructor of search, and yet is passed as a variable here.
         # search.place_gene(iog)              
-        search.place_gene() 
+        # search.place_gene() 
     
     print("Tree: %s" % fn_tree)  
     if warn_str != "":
@@ -128,10 +129,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("infile", help= "Input FASTA filename of the query sequence")
     parser.add_argument("db", help= "Database directory, prepared by fol_create_dp.py")
-    parser.add_argument("-m", "--msa", action="store_true", help= "Use an MSA tree")
+    # parser.add_argument("-m", "--msa", action="store_true", help= "Use an MSA tree")
     parser.add_argument("-u", "--upper", type=int, help= "Upper limit for tree, unless -l")
     parser.add_argument("-l", "--lower", type=int, help= "Exceed -u if alternative is < -l")
     parser.add_argument("-p", "--print_tree", action="store_true", help= "Print tree as final line")
     parser.add_argument("-t", "--tree_method", default="epa", choices={"epa", "iqtree"})
     args = parser.parse_args()
-    main(args.db, args.infile, args.msa, args.upper, args.lower, args.tree_method, args.print_tree)
+    main(args.db, args.infile, True, args.upper, args.lower, args.tree_method, args.print_tree)
