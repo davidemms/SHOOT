@@ -271,6 +271,6 @@ if __name__ == "__main__":
                             min_for_profile=20, 
                             q_ids=True, 
                             divide= 10, 
-                            subtrees_dir="Gene_Trees/subtrees_2000")
+                            subtrees_dir="Gene_Trees/")
 
 
