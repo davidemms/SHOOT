@@ -49,7 +49,7 @@ class FastaWriter(object):
                     outFile.write(">%s\n" % seq)
                     outFile.write(self.SeqLists[seq])
                 else:
-                    sys.stderr("ERROR: %s not found" % seq)
+                    sys.stderr.write("ERROR: %s not found\n" % seq)
     
     def AppendToStockholm(self, msa_id, outFilename, seqs=None):
         """
@@ -70,7 +70,7 @@ class FastaWriter(object):
                     outFile.write("%s " % seq)
                     outFile.write(self.SeqLists[seq].replace("\n", "") + "\n")
                 else:
-                    sys.stderr("ERROR: %s not found" % seq)
+                    sys.stderr("ERROR: %s not found\n" % seq)
             outFile.write("//\n")
             
     def Print(self, seqs):
