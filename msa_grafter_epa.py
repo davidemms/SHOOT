@@ -56,12 +56,12 @@ class MSAGrafter_EPA(msa_grafter.MSAGrafter):
             fn_tree_input = fn_tree_bifur if os.path.exists(fn_tree_bifur) else fn_tree_orig
             # print("epa-ng -T 32 -m LG --redo --tree %s --ref-msa %s --query %s --preserve-rooting on --outdir %s" % (fn_tree_input, fn_ref, fn_query, out_dir))
             with open(os.devnull, 'w') as FNULL:
-                subprocess.call("epa-ng -T 32 -m LG --redo --tree %s --ref-msa %s --query %s --preserve-rooting on --outdir %s" % (fn_tree_input, fn_ref, fn_query, out_dir), shell=True, stdout=FNULL, stderr=FNULL)
+                subprocess.call("epa-ng -T %d -m LG --redo --tree %s --ref-msa %s --query %s --preserve-rooting on --outdir %s" % (self.nthreads, fn_tree_input, fn_ref, fn_query, out_dir), shell=True, stdout=FNULL, stderr=FNULL)
             results_fn = out_dir + "epa_result.jplace"
             fn_tree_new = self.place_gene_gappa(results_fn)
         elif n_seqs_123many == 3:
             # have minimum number of sequences for a tree, by no original tree
-            subprocess.call("iqtree -nt 32 -quiet -m LG -fast -redo -s %s" % fn_msa, shell=True)
+            subprocess.call("iqtree -nt %d -quiet -m LG -fast -redo -s %s" % (self.nthreads, fn_msa), shell=True)
             fn_tree_new = fn_msa + ".treefile"
         return fn_tree_new
 

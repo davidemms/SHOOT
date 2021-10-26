@@ -11,13 +11,14 @@ import ete3
 import database
 
 class MSAGrafter(object):
-    def __init__(self, d_db):
+    def __init__(self, d_db, nthreads):
         """
         Add a gene to a tree by extending the MSA and re-inferring the tree.
         Args:
             d_db - Database directory
         """
         self.db = database.Database(d_db)
+        self.nthreads = nthreads
 
 
     def add_gene(self, og_part, infn, fn_out_base, method = "iqtree"):
@@ -54,7 +55,7 @@ class MSAGrafter(object):
             fn_input_to_msa = infn
         genes.append(query_name)
         fn_msa_new = fn_out_base + ".sh.msa.fa"
-        subprocess.call("mafft --anysymbol --retree 1 --maxiterate 0 --nofft --thread 16 --quiet --add %s %s > %s" % (fn_input_to_msa, fn_msa_orig, fn_msa_new), shell=True)
+        subprocess.call("mafft --anysymbol --retree 1 --maxiterate 0 --nofft --thread %d --quiet --add %s %s > %s" % (self.nthreads, fn_input_to_msa, fn_msa_orig, fn_msa_new), shell=True)
         if n_seqs_orig_123many >= 3:
             fn_tree_new = self.run_tree_inference(og_part, n_seqs_orig_123many, fn_msa_new, q_subtree)
         else:
@@ -306,11 +307,11 @@ class MSAGrafter(object):
                 t.unroot()
                 fn_unrooted = fn_tree_orig + ".un.tre"
                 t.write(outfile=fn_unrooted)
-            subprocess.call("iqtree -nt 32 -quiet -m LG -fast -redo -g %s -s %s" % (fn_unrooted, fn_msa), shell=True)
+            subprocess.call("iqtree -nt %d -quiet -m LG -fast -redo -g %s -s %s" % (self.nthreads, fn_unrooted, fn_msa), shell=True)
             fn_tree_new = fn_msa + ".treefile"
         elif n_seqs_123many == 3:
             # have minimum number of sequences for a tree, but no original tree
-            subprocess.call("iqtree -nt 32 -quiet -m LG -fast -redo -s %s" % fn_msa, shell=True)
+            subprocess.call("iqtree -nt %d -quiet -m LG -fast -redo -s %s" % (self.nthreads, fn_msa), shell=True)
             fn_tree_new = fn_msa + ".treefile"
         return fn_tree_new
 

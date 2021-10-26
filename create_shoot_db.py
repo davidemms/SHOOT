@@ -195,12 +195,12 @@ def create_profiles_database(din, q_kmeans = True, min_for_profile=20, q_ids=Tru
         # print(ids['28_14289'])
         ids_rev = {v:k for k,v in ids.items()}
     for iog, og in enumerate(ogs):
-        if not os.path.exists(din + subtrees_dir + "/../OG%07d_tree.txt" % iog):
-            print("Skipping %d" % iog)
-            continue
+        # if not os.path.exists(din + subtrees_dir + "/../OG%07d_tree.txt" % iog):
+        #     print("Skipping %d" % iog)
+        #     continue
         # if iog < 21 or iog > 22:
         #     continue
-        if iog % 1000 == 0:
+        if iog % 10 == 0 and iog <= 1000:
             print(iog)
         n = len(og)
         og_id = "%07d" % iog
@@ -211,8 +211,8 @@ def create_profiles_database(din, q_kmeans = True, min_for_profile=20, q_ids=Tru
         q_subtrees = os.path.exists(pat_super % iog)
         if q_subtrees: 
             print("Subtrees: %d" % iog)
-        else:
-            continue
+        # else:
+        #     continue
         # print(pat_super % iog)
         fn_msa_unsplit = wd + "Alignments_ids/OG%07d.fa" % iog
         fn_seq_unsplit = wd + "Sequences_ids/OG%07d.fa" % iog

@@ -11,7 +11,7 @@ class OGAssigner(object):
     """
     Assign a sequence to an orthogroup
     """
-    def assign(self, infn):
+    def assign(self):
         """
         Assign a sequence to an orthogroup
         Args:
@@ -26,8 +26,9 @@ class OGAssignDIAMOND(OGAssigner):
     """
     Assign using DIAMOND
     """
-    def __init__(self, d_db, profiles_db_name="diamond_profile_sequences.fa.db.dmnd"):
+    def __init__(self, d_db, nthreads, profiles_db_name="diamond_profile_sequences.fa.db.dmnd"):
         self.d_db = d_db
+        self.nthreads = nthreads
         self.profiles_db_name = profiles_db_name
 
     def assign(self, infn, q_ultra_sens=False):
@@ -63,7 +64,7 @@ class OGAssignDIAMOND(OGAssigner):
         fn_db = self.d_db + self.profiles_db_name
         fn_og_results_out = fn_out_base + ".sh.ogs.txt"
         with open(os.devnull, 'w') as FNULL:
-            cmd_list = ["diamond", "blastp", "-d", fn_db, "-q", fn_query, "-o", fn_og_results_out, "--quiet", "-e", "0.001", "--compress", "1"]
+            cmd_list = ["diamond", "blastp", "-d", fn_db, "-q", fn_query, "-o", fn_og_results_out, "--quiet", "-e", "0.001", "--compress", "1", "-p", str(self.nthreads)]
             if q_ultra_sens:
                 cmd_list += ["--ultra-sensitive"]
             subprocess.call(cmd_list,stdout=FNULL, stderr=FNULL)

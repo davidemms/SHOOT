@@ -17,7 +17,7 @@ import ete3
 gene_name_disallowed_chars_re = '[^A-Za-z0-9_\\-.]'
 
 
-def main(d_db, infn, q_msa, nU, nL, tree_method, q_print=False):
+def main(d_db, infn, q_msa, nU, nL, tree_method, nthreads, q_print=False):
     """
     Run SHOOT
     Args:
@@ -43,7 +43,7 @@ def main(d_db, infn, q_msa, nU, nL, tree_method, q_print=False):
     # now fix up accession if required
     fn_for_use = clean_fasta(infn)
 
-    og_assign = og_assigner.OGAssignDIAMOND(d_db)
+    og_assign = og_assigner.OGAssignDIAMOND(d_db, nthreads)
     og_part = og_assign.assign(fn_for_use)
     if og_part is not None:
         print("Gene assigned to: OG%s" % og_part)
@@ -55,9 +55,9 @@ def main(d_db, infn, q_msa, nU, nL, tree_method, q_print=False):
     if q_msa:
         # do a tree using an MSA
         if "iqtree" == tree_method:
-            graft = msa_grafter.MSAGrafter(d_db)
+            graft = msa_grafter.MSAGrafter(d_db, nthreads)
         elif "epa" == tree_method:
-            graft = msa_grafter_epa.MSAGrafter_EPA(d_db)
+            graft = msa_grafter_epa.MSAGrafter_EPA(d_db, nthreads)
         else:
             print("ERROR: %s method has not been implemented" % tree_method)
             return
@@ -134,5 +134,6 @@ if __name__ == "__main__":
     parser.add_argument("-l", "--lower", type=int, help= "Exceed -u if alternative is < -l")
     parser.add_argument("-p", "--print_tree", action="store_true", help= "Print tree as final line")
     parser.add_argument("-t", "--tree_method", default="epa", choices={"epa", "iqtree"})
+    parser.add_argument("-n", "--nthreads", type=int, default=16)
     args = parser.parse_args()
-    main(args.db, args.infile, True, args.upper, args.lower, args.tree_method, args.print_tree)
+    main(args.db, args.infile, True, args.upper, args.lower, args.tree_method, args.nthreads, args.print_tree)
