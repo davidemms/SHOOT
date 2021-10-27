@@ -11,7 +11,7 @@ SHOOT allows you to search a protein sequence against a database of gene trees. 
 
 ### Preparing a SHOOT phylogenetic database
 0. Install dependencies:
-    - Python ete3 library
+    - Python libraries: ete3, sklearn, biopython 
     - DIAMOND
     - MAFFT
     - EPA-ng & gappa (https://github.com/lczech/gappa)
