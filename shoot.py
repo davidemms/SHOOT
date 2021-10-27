@@ -3,7 +3,9 @@
 
 # import sys
 import re
+import csv
 import argparse
+from collections import defaultdict
 
 import og_assigner
 import tree_grafter
@@ -17,7 +19,7 @@ import ete3
 gene_name_disallowed_chars_re = '[^A-Za-z0-9_\\-.]'
 
 
-def main(d_db, infn, q_msa, nU, nL, tree_method, nthreads, q_print=False):
+def main(d_db, infn, q_msa, nU, nL, tree_method, nthreads, q_print=False, q_orthologs=False):
     """
     Run SHOOT
     Args:
@@ -98,6 +100,10 @@ def main(d_db, infn, q_msa, nU, nL, tree_method, nthreads, q_print=False):
     if q_need_to_print:
         with open(fn_tree, 'r') as infile:
             print(next(infile).rstrip())   # remove any trailing newline characters
+
+    if q_orthologs:
+        fn_ologs = fn_for_use + ".sh.orthologs.tsv"
+        write_orthologs(fn_tree, fn_ologs, query_gene)
     return fn_tree        
 
 
@@ -125,6 +131,63 @@ def clean_fasta(infn):
         return fn_for_use
 
 
+def gene_to_species(name):
+    """
+    Convert a gene name to species name
+    Args:
+        name - gene name
+    Returns 
+        species_name - species name
+    """
+    return "_".join(name.split("_")[:2])
+
+
+def write_orthologs(fn_tree, fn_ologs, gene_name):
+    """
+    Write the orthologs of the query gene to file
+    Args:
+        fn_tree - filename for the SHOOT tree
+        fn_ologs - filename to write orthologs
+        gene_name - query gene name
+    """
+    t = ete3.Tree(fn_tree)
+    with open(fn_ologs, 'wt') as outfile:
+        writer = csv.writer(outfile, delimiter="\t")
+        writer.writerow(["Species", "Orthologs"])
+        n = t & gene_name
+        n_prev = n
+        species_query_branch = set()
+        while n.up is not None:
+            n = n.up
+            n_other = [node for node in n.children if node != n_prev]
+            genes_other = [gene for node in n_other for gene in node.get_leaf_names()]
+            species_other = set([gene_to_species(gene) for gene in genes_other])
+            overlap = species_query_branch.intersection(species_other)
+            o = len(overlap)
+            m = min(len(species_other), len(species_query_branch))
+            if o == 0 or (m >= 4 and o == 1) or (m >= 9 and o ==2):
+                add_orthologs_to_file(writer, genes_other, overlap)
+            n_prev = n
+            species_query_branch.update(species_other)
+
+
+def add_orthologs_to_file(writer, genes, overlap):
+    """
+    Add the genes below the nodes in n_other to the the csv writer as orthologs
+    Args:
+        writer - CSV writer
+        genes - list of gene names
+        overlap - set of species in the overlap (these will not be written)
+    """
+    species_to_genes = defaultdict(list)
+    for g in genes:
+        species_to_genes[gene_to_species(g)].append(g)
+    for sp in sorted(species_to_genes.keys()):
+        if sp in overlap:
+            continue
+        writer.writerow([sp, ", ".join(species_to_genes[sp])])
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("infile", help= "Input FASTA filename of the query sequence")
@@ -135,5 +198,7 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--print_tree", action="store_true", help= "Print tree as final line")
     parser.add_argument("-t", "--tree_method", default="epa", choices={"epa", "iqtree"})
     parser.add_argument("-n", "--nthreads", type=int, default=16)
+    parser.add_argument("-o", "--orthologs", action="store_true", help="Requires database gene names to be 'genus_species_geneID")
     args = parser.parse_args()
-    main(args.db, args.infile, True, args.upper, args.lower, args.tree_method, args.nthreads, args.print_tree)
+    main(args.db, args.infile, True, args.upper, args.lower, args.tree_method, 
+         args.nthreads, args.print_tree, args.orthologs)
