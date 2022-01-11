@@ -27,6 +27,6 @@ The OrthoFinder RESULTS_DIRECTORY is now a SHOOT database.
 
 ### Running SHOOT
 ```
-python shoot.py INPUT_FASTA SHOOT_DB
+python shoot INPUT_FASTA SHOOT_DB
 ```
 where INPUT_FASTA is a fasta file containing the amino acid sequence for the search and SHOOT_DB is the SHOOT database directory created using the steps above.
