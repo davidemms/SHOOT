@@ -199,6 +199,6 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--tree_method", default="epa", choices={"epa", "iqtree"})
     parser.add_argument("-n", "--nthreads", type=int, default=16)
     parser.add_argument("-o", "--orthologs", action="store_true", help="Requires database gene names to be 'genus_species_geneID")
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
     main(args.db, args.infile, True, args.upper, args.lower, args.tree_method, 
          args.nthreads, args.print_tree, args.orthologs)
