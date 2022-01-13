@@ -26,10 +26,13 @@ class OGAssignDIAMOND(OGAssigner):
     """
     Assign using DIAMOND
     """
-    def __init__(self, d_db, nthreads, profiles_db_name="diamond_profile_sequences.fa.db.dmnd"):
+    def __init__(self, d_db, nthreads, q_all_seqs=False):
         self.d_db = d_db
         self.nthreads = nthreads
-        self.profiles_db_name = profiles_db_name
+        self.profiles_db_name = (
+            "diamond_all_sequences.fa.db.dmnd"
+            if q_all_seqs
+            else "diamond_profile_sequences.fa.db.dmnd")
 
     def assign(self, infn, q_ultra_sens=False):
         """

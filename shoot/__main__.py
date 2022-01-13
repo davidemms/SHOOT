@@ -19,16 +19,36 @@ import ete3
 gene_name_disallowed_chars_re = '[^A-Za-z0-9_\\-.]'
 
 
-def main(d_db, infn, q_msa, nU, nL, tree_method, nthreads, q_print=False, q_orthologs=False):
+def Options(object):
+    def __init__(
+            self, 
+            nthreads,
+            q_profiles_all=False,
+            search_high_sens=False,    # Use high sens. for homolog group search
+            q_msa=True,                # Use MSA method for tree inference
+            q_mafft_accelerated=True,
+            tree_method="epa",         # method to use for tree inference
+            nU=None,                   # Upper limit for tree, unless nL is not None 
+            nL=None,                   # Exceed nU if alternative is a tree < nL
+            q_print=False,             # print tree to stdout 
+            q_orthologs=False,         # write orthologs to INFN.sh.orthologs.tsv
+            ):
+        self.nthreads=nthreads
+        self.q_profiles_all=q_profiles_all
+        self.search_high_sens=search_high_sens
+        self.q_msa=q_msa,
+        self.q_mafft_accelerated=q_mafft_accelerated
+        self.tree_method=tree_method
+
+
+def main(d_db, infn, opts):
     """
     Run SHOOT
     Args:
         d_db - Input directory containing SHOOT database
         infn - Query FASTA filename
-        q_msa - Use MSA method for tree inference
-        nU - Upper limit for tree, unless nL is not None
-        nL - Exceed nU if alternative is a tree < nL
-        tree_method - method to use for tree inference
+        opt - Options object
+
     Returns:
         fn_tree - Filename for tree or None
     """
@@ -45,8 +65,8 @@ def main(d_db, infn, q_msa, nU, nL, tree_method, nthreads, q_print=False, q_orth
     # now fix up accession if required
     fn_for_use = clean_fasta(infn)
 
-    og_assign = og_assigner.OGAssignDIAMOND(d_db, nthreads)
-    og_part = og_assign.assign(fn_for_use)
+    og_assign = og_assigner.OGAssignDIAMOND(d_db, opt.nthreads, opt.q_profiles_all)
+    og_part = og_assign.assign(fn_for_use, q_ultra_sens=opt.search_high_sens)
     if og_part is not None:
         print("Gene assigned to: OG%s" % og_part)
     else:
@@ -54,16 +74,21 @@ def main(d_db, infn, q_msa, nU, nL, tree_method, nthreads, q_print=False, q_orth
         return 
 
     warn_str = ""
-    if q_msa:
+    if opt.q_msa:
         # do a tree using an MSA
-        if "iqtree" == tree_method:
-            graft = msa_grafter.MSAGrafter(d_db, nthreads)
-        elif "epa" == tree_method:
-            graft = msa_grafter_epa.MSAGrafter_EPA(d_db, nthreads)
+        if "iqtree" == opt.tree_method:
+            graft = msa_grafter.MSAGrafter(d_db, opt.nthreads)
+        elif "epa" == opt.tree_method:
+            graft = msa_grafter_epa.MSAGrafter_EPA(d_db, opt.nthreads)
         else:
-            print("ERROR: %s method has not been implemented" % tree_method)
+            print("ERROR: %s method has not been implemented" % opt.tree_method)
             return
-        fn_tree, query_gene, warn_str = graft.add_gene(og_part, fn_for_use, infn)
+        fn_tree, query_gene, warn_str = graft.add_gene(
+                og_part, 
+                fn_for_use, 
+                infn, 
+                q_mafft_acc=opt.q_mafft_accelerated,
+                )
     else:
         raise Exception("Option not available")
         # quart = quartets_pairwise_align.PairwiseAlignQuartets(d_db, og_part, fn_for_use)
@@ -77,19 +102,19 @@ def main(d_db, infn, q_msa, nU, nL, tree_method, nthreads, q_print=False, q_orth
     if warn_str != "":
         print("WARNING: " + warn_str) 
         
-    q_need_to_print = q_print
-    if nU is not None:
+    q_need_to_print = opt.q_print
+    if opt.nU is not None:
         # if only nL is specified alone that has no effect
         t = ete3.Tree(fn_tree)
-        if len(t) > nU:
+        if len(t) > opt.nU:
             node = t & query_gene
-            while len(node) < nU:
+            while len(node) < opt.nU:
                 node_prev = node
                 n_taxa_prev = len(node)
                 node = node.up
             # now there are more than nU genes in this tree, step down one
             # unless it is fewer than nL
-            node = node_prev if (nL is None or n_taxa_prev >= nL) else node
+            node = node_prev if (opt.nL is None or n_taxa_prev >= opt.nL) else node
             nwk_str = node.write()
             with open(fn_tree, 'w') as outfile:
                 outfile.write(nwk_str)
@@ -101,7 +126,7 @@ def main(d_db, infn, q_msa, nU, nL, tree_method, nthreads, q_print=False, q_orth
         with open(fn_tree, 'r') as infile:
             print(next(infile).rstrip())   # remove any trailing newline characters
 
-    if q_orthologs:
+    if opt.q_orthologs:
         fn_ologs = fn_for_use + ".sh.orthologs.tsv"
         write_orthologs(fn_tree, fn_ologs, query_gene)
     return fn_tree        
@@ -193,12 +218,33 @@ if __name__ == "__main__":
     parser.add_argument("infile", help= "Input FASTA filename of the query sequence")
     parser.add_argument("db", help= "Database directory, prepared by fol_create_dp.py")
     # parser.add_argument("-m", "--msa", action="store_true", help= "Use an MSA tree")
+    # Output options
     parser.add_argument("-u", "--upper", type=int, help= "Upper limit for tree, unless -l")
     parser.add_argument("-l", "--lower", type=int, help= "Exceed -u if alternative is < -l")
     parser.add_argument("-p", "--print_tree", action="store_true", help= "Print tree as final line")
-    parser.add_argument("-t", "--tree_method", default="epa", choices={"epa", "iqtree"})
-    parser.add_argument("-n", "--nthreads", type=int, default=16)
     parser.add_argument("-o", "--orthologs", action="store_true", help="Requires database gene names to be 'genus_species_geneID")
+    # search options
+    parser.add_argument("--high_sens", action="store_true", 
+                        help= "High sensitivity for homology group search")
+    parser.add_argument("--profiles_all", action="store_true", 
+                        help= "Use all genes for the homology group profiles")
+    parser.add_argument("--mafft_defaults", action="store_true", 
+                        help= "Use mafft defaults rather than accelerated options")
+    parser.add_argument("-t", "--tree_method", default="epa", choices={"epa", "iqtree"})
+    # threads
+    parser.add_argument("-n", "--nthreads", type=int, default=16)
     args, unknown = parser.parse_known_args()
-    main(args.db, args.infile, True, args.upper, args.lower, args.tree_method, 
-         args.nthreads, args.print_tree, args.orthologs)
+    opts = Options(
+            nthreads=args.nthreads,
+            q_profiles_all=args.profiles_all,
+            search_high_sens=args.high_sens,
+            q_msa=True,
+            q_mafft_accelerated=not args.mafft_defaults,
+            tree_method=args.tree_method,
+            nU=args.upper,
+            nL=args.lower, 
+            q_print=args.print_tree, 
+            q_orthologs=args.orthologs,
+            )
+    main(args.db, args.infile, opts)
+

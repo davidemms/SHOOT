@@ -21,12 +21,19 @@ class MSAGrafter(object):
         self.nthreads = nthreads
 
 
-    def add_gene(self, og_part, infn, fn_out_base, method = "iqtree"):
+    def add_gene(self, 
+                 og_part, 
+                 infn, 
+                 fn_out_base, 
+                 q_mafft_acc=True,
+                 tree_method = "iqtree"):
         """
         Args:
             og_part - the OG or OG.PART to search in
             infn - FASTA filename containing the gene sequence
             fn_out_base - filenname onto which to build output files 
+            q_mafft_acc - use accelerated MAFFT options instead of default
+            tree_method - {iqtree,epa}
         Returns:
             fn_final_tree - the filename for the output tree
             query_name - the name of the query gene in the tree
@@ -55,7 +62,10 @@ class MSAGrafter(object):
             fn_input_to_msa = infn
         genes.append(query_name)
         fn_msa_new = fn_out_base + ".sh.msa.fa"
-        subprocess.call("mafft --anysymbol --retree 1 --maxiterate 0 --nofft --thread %d --quiet --add %s %s > %s" % (self.nthreads, fn_input_to_msa, fn_msa_orig, fn_msa_new), shell=True)
+        mafft_opts = "--retree 1 --maxiterate 0 --nofft" if q_mafft_acc else ""
+        subprocess.call("mafft --anysymbol %s --thread %d --quiet --add %s %s > %s" % (
+                mafft_opts, self.nthreads, fn_input_to_msa, fn_msa_orig, fn_msa_new), 
+                shell=True)
         if n_seqs_orig_123many >= 3:
             fn_tree_new = self.run_tree_inference(og_part, n_seqs_orig_123many, fn_msa_new, q_subtree)
         else:
