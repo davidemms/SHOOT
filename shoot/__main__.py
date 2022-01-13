@@ -19,7 +19,7 @@ import ete3
 gene_name_disallowed_chars_re = '[^A-Za-z0-9_\\-.]'
 
 
-def Options(object):
+class Options(object):
     def __init__(
             self, 
             nthreads,
@@ -39,6 +39,10 @@ def Options(object):
         self.q_msa=q_msa,
         self.q_mafft_accelerated=q_mafft_accelerated
         self.tree_method=tree_method
+        self.nU = nU
+        self.nL = nL
+        self.q_print = q_print
+        self.q_orthologs = q_orthologs
 
 
 def main(d_db, infn, opts):
@@ -47,7 +51,7 @@ def main(d_db, infn, opts):
     Args:
         d_db - Input directory containing SHOOT database
         infn - Query FASTA filename
-        opt - Options object
+        opts - Options object
 
     Returns:
         fn_tree - Filename for tree or None
@@ -65,8 +69,8 @@ def main(d_db, infn, opts):
     # now fix up accession if required
     fn_for_use = clean_fasta(infn)
 
-    og_assign = og_assigner.OGAssignDIAMOND(d_db, opt.nthreads, opt.q_profiles_all)
-    og_part = og_assign.assign(fn_for_use, q_ultra_sens=opt.search_high_sens)
+    og_assign = og_assigner.OGAssignDIAMOND(d_db, opts.nthreads, opts.q_profiles_all)
+    og_part = og_assign.assign(fn_for_use, q_ultra_sens=opts.search_high_sens)
     if og_part is not None:
         print("Gene assigned to: OG%s" % og_part)
     else:
@@ -74,20 +78,20 @@ def main(d_db, infn, opts):
         return 
 
     warn_str = ""
-    if opt.q_msa:
+    if opts.q_msa:
         # do a tree using an MSA
-        if "iqtree" == opt.tree_method:
-            graft = msa_grafter.MSAGrafter(d_db, opt.nthreads)
-        elif "epa" == opt.tree_method:
-            graft = msa_grafter_epa.MSAGrafter_EPA(d_db, opt.nthreads)
+        if "iqtree" == opts.tree_method:
+            graft = msa_grafter.MSAGrafter(d_db, opts.nthreads)
+        elif "epa" == opts.tree_method:
+            graft = msa_grafter_epa.MSAGrafter_EPA(d_db, opts.nthreads)
         else:
-            print("ERROR: %s method has not been implemented" % opt.tree_method)
+            print("ERROR: %s method has not been implemented" % opts.tree_method)
             return
         fn_tree, query_gene, warn_str = graft.add_gene(
                 og_part, 
                 fn_for_use, 
                 infn, 
-                q_mafft_acc=opt.q_mafft_accelerated,
+                q_mafft_acc=opts.q_mafft_accelerated,
                 )
     else:
         raise Exception("Option not available")
@@ -102,19 +106,19 @@ def main(d_db, infn, opts):
     if warn_str != "":
         print("WARNING: " + warn_str) 
         
-    q_need_to_print = opt.q_print
-    if opt.nU is not None:
+    q_need_to_print = opts.q_print
+    if opts.nU is not None:
         # if only nL is specified alone that has no effect
         t = ete3.Tree(fn_tree)
-        if len(t) > opt.nU:
+        if len(t) > opts.nU:
             node = t & query_gene
-            while len(node) < opt.nU:
+            while len(node) < opts.nU:
                 node_prev = node
                 n_taxa_prev = len(node)
                 node = node.up
             # now there are more than nU genes in this tree, step down one
             # unless it is fewer than nL
-            node = node_prev if (opt.nL is None or n_taxa_prev >= opt.nL) else node
+            node = node_prev if (opts.nL is None or n_taxa_prev >= opts.nL) else node
             nwk_str = node.write()
             with open(fn_tree, 'w') as outfile:
                 outfile.write(nwk_str)
@@ -126,7 +130,7 @@ def main(d_db, infn, opts):
         with open(fn_tree, 'r') as infile:
             print(next(infile).rstrip())   # remove any trailing newline characters
 
-    if opt.q_orthologs:
+    if opts.q_orthologs:
         fn_ologs = fn_for_use + ".sh.orthologs.tsv"
         write_orthologs(fn_tree, fn_ologs, query_gene)
     return fn_tree        

@@ -77,7 +77,7 @@ class MSAGrafter(object):
         # Rooting
         if not q_subtree:
             # Based on previous outgroup
-            warn_string_root, nwk_str = self.root_independent_tree(og_part, fn_tree_new, n_seqs_orig_123many, method == "iqtree")
+            warn_string_root, nwk_str = self.root_independent_tree(og_part, fn_tree_new, n_seqs_orig_123many, tree_method == "iqtree")
             if warn_string != "":
                 warn_string = "\n" + warn_string
             else:
@@ -88,7 +88,7 @@ class MSAGrafter(object):
             nwk_sub, t_sup = self.root_subtree(og_part, n_taxa_123many, genes, fn_tree_new)
             nwk_str = self.reconstruct_super_tree(og_part, t_sup, nwk_sub)
         
-        if method == "iqtree":
+        if tree_method == "iqtree":
             query_name = self.iqtree_names_adjust([query_name, ])[0]
         nwk_str = self.remove_support_for_gene_placement(nwk_str, query_name)
         with open(fn_final_tree, 'w') as outfile:
