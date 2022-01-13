@@ -134,7 +134,7 @@ def create_full_database(din, subtrees_dir):
     subtrees_label = os.path.split(subtrees_dir)[1]
     pat_super = din + subtrees_dir + "/super/OG%07d.super.tre"
     pat_sub_msa_glob = din + subtrees_dir + "/msa_sub/OG%07d.*.fa"
-    fn_fasta = din + "diamond_all_sequences.iqtree.%s.fa" % subtrees_label
+    fn_fasta = din + "diamond_all_sequences.%s.fa" % subtrees_label
     fn_diamond_db = fn_fasta + ".db"
     n_og = max([int(os.path.basename(fn)[2:].split(".")[0]) for fn in   glob.glob(din + "Orthogroup_Sequences/OG*fa")]) 
     fw = fasta_writer.FastaWriter(din + "Orthogroup_Sequences/OG*fa", qGlob=True)
@@ -261,16 +261,26 @@ def create_profiles_database(din, q_kmeans = True, min_for_profile=20, q_ids=Tru
 
 
 if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print("Args: input_directory [full,profiles]")
+        sys.exit() 
     din = sys.argv[1]
+    full_or_profiles = sys.argv[2]
+    if full_or_profiles not in ["full", "profiles", "mmseqs"]:
+        print("Args: input_directory [full,profiles,mmseqs]")
+        sys.exit() 
     if not din.endswith("/"):
         din += "/"
-    # create_mmseqs_database(din)
-    # create_full_database(din, subtrees_dir="Gene_Trees/subtrees")
-    create_profiles_database(din, 
-                            q_kmeans = True, 
-                            min_for_profile=20, 
-                            q_ids=True, 
-                            divide= 10, 
-                            subtrees_dir="Gene_Trees/")
+    if full_or_profiles == "full":
+        create_full_database(din, subtrees_dir="Gene_Trees/subtrees")
+    elif full_or_profiles == "profiles":
+        create_profiles_database(din, 
+                                q_kmeans = True, 
+                                min_for_profile=20, 
+                                q_ids=True, 
+                                divide= 10, 
+                                subtrees_dir="Gene_Trees/")
+    elif full_or_profiles == "mmseqs":
+        create_mmseqs_database(din)
 
 
