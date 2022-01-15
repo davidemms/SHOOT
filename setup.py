@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="SHOOT",
-    version="1.1.0",
+    version="1.1.1",
     description="Phylogenetic gene search and ortholog inference",
     author="David Emms",
     author_email="david_emms@hotmail.com",

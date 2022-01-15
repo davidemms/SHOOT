@@ -29,10 +29,9 @@ class OGAssignDIAMOND(OGAssigner):
     def __init__(self, d_db, nthreads, q_all_seqs=False):
         self.d_db = d_db
         self.nthreads = nthreads
-        self.profiles_db_name = (
-            "diamond_all_sequences.fa.db.dmnd"
-            if q_all_seqs
-            else "diamond_profile_sequences.fa.db.dmnd")
+        self.q_all_seqs_default = q_all_seqs
+        self.profiles_db_name = "diamond_profile_sequences.fa.db.dmnd"
+        self.all_seqs_db_name = "diamond_all_sequences.fa.db.dmnd"
 
     def assign(self, infn, q_ultra_sens=False):
         """
@@ -49,13 +48,13 @@ class OGAssignDIAMOND(OGAssigner):
             fn_base = infn
         fn_results = self.run_diamond(infn, fn_base, q_ultra_sens=q_ultra_sens)
         iog = self.og_from_diamond_results(fn_results)
-        if not q_ultra_sens and iog is None:
-            # Try again with a more sensitive search
-            fn_results = self.run_diamond(infn, fn_base, q_ultra_sens=True)
+        if ((not q_ultra_sens) or (not self.q_all_seqs_default)) and iog is None:
+            # Try again with a more sensitive search & all sequences
+            fn_results = self.run_diamond(infn, fn_base, q_ultra_sens=True, q_all_seqs=True)
             iog = self.og_from_diamond_results(fn_results)
         return iog
     
-    def run_diamond(self, fn_query, fn_out_base, q_ultra_sens=False):
+    def run_diamond(self, fn_query, fn_out_base, q_ultra_sens=False, q_all_seqs=False):
         """
         Run DIAMOND against database of orthogroup profiles
         Args:
@@ -64,7 +63,7 @@ class OGAssignDIAMOND(OGAssigner):
         Returns:
             fn_og_results_out - DIAMOND results filename
         """
-        fn_db = self.d_db + self.profiles_db_name
+        fn_db = self.d_db + (self.all_seqs_db_name if q_all_seqs else self.profiles_db_name) 
         fn_og_results_out = fn_out_base + ".sh.ogs.txt"
         with open(os.devnull, 'w') as FNULL:
             cmd_list = ["diamond", "blastp", "-d", fn_db, "-q", fn_query, "-o", fn_og_results_out, "--quiet", "-e", "0.001", "--compress", "1", "-p", str(self.nthreads)]
