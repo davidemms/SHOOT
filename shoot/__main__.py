@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# import sys
+import os
 import re
 import csv
 import argparse
@@ -85,7 +85,7 @@ def main(d_db, infn, opts):
                                     infn, 
                                     q_mafft_acc=opts.q_mafft_accelerated,
                                     )
-    db_name = os.path.basename(d_db)
+    db_name = os.path.basename(d_db[:-1])
     with open(infn + ".assign.txt", 'w') as outfile:
         outfile.write("%s\n%s\n%s\n" % (db_name, og_part, query_gene_name_final))
     
@@ -123,7 +123,7 @@ def main(d_db, infn, opts):
     return fn_tree        
 
 
-def is_fasta(infn)
+def is_fasta(infn):
     # rapid check for FASTA format
     try:
         if not os.path.exists(infn):
@@ -151,13 +151,14 @@ def clean_fasta(infn):
         name = acc.rstrip()[1:]
         name_cleaned = re.sub(gene_name_disallowed_chars_re, '_', name)
         if name == name_cleaned:
-            return infn
-        # otherwise, need to create a new file
-        fn_for_use = infn + ".sh.cleaned"
-        with open(fn_for_use, 'w') as outfile:
-            outfile.write(">%s\n" % name_cleaned)
-            for l in infile:
-                outfile.write(l)
+            fn_for_use = infn
+        else:
+            # otherwise, need to create a new file
+            fn_for_use = infn + ".sh.cleaned"
+            with open(fn_for_use, 'w') as outfile:
+                outfile.write(">%s\n" % name_cleaned)
+                for l in infile:
+                    outfile.write(l)
         return fn_for_use, name_cleaned
 
 
