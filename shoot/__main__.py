@@ -73,8 +73,9 @@ def main(d_db, infn, opts):
     og_part = og_assign.assign(fn_for_use, q_ultra_sens=opts.search_high_sens)
     if og_part is not None:
         print("Gene assigned to: OG%s" % og_part)
+        db_name = os.path.split(d_db[:-1])[1]
         with open(infn + ".assign.txt", 'w') as outfile:
-            outfile.write("%s\n" % og_part)
+            outfile.write("%s\n%s\n" % (db_name, og_part))
     else:
         print("No homologs found for gene in this database")
         return 
