@@ -84,6 +84,7 @@ def main(d_db, infn, opts):
                                     fn_for_use, 
                                     infn, 
                                     q_mafft_acc=opts.q_mafft_accelerated,
+                                    tree_method=opts.tree_method,
                                     )
     db_name = os.path.basename(d_db[:-1])
     with open(infn + ".assign.txt", 'w') as outfile:
