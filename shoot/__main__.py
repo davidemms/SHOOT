@@ -259,5 +259,9 @@ if __name__ == "__main__":
             q_print=args.print_tree, 
             q_orthologs=args.orthologs,
             )
-    main(db, args.infile, opts)
+    try:
+        main(db, args.infile, opts)
+    finally:
+        with open(args.infile + ".sh.log", 'w') as outfile:
+            outfile.write("Finished\n")
 
