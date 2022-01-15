@@ -90,11 +90,11 @@ class MSAGrafter(object):
         
         if tree_method == "iqtree":
             query_name = self.iqtree_names_adjust([query_name, ])[0]
-        nwk_str = self.remove_support_for_gene_placement(nwk_str, query_name)
+            # with EPA we get a correct support value
+            nwk_str = self.remove_support_for_gene_placement(nwk_str, query_name)
         with open(fn_final_tree, 'w') as outfile:
             outfile.write(nwk_str)
         return fn_final_tree, query_name, warn_string
-
 
     def root_independent_tree(self, og_part, fn_tree_new, n_seqs_123many, iq_name_adjust):
         """
