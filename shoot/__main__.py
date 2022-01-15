@@ -25,7 +25,6 @@ class Options(object):
             nthreads,
             q_profiles_all=False,
             search_high_sens=False,    # Use high sens. for homolog group search
-            q_msa=True,                # Use MSA method for tree inference
             q_mafft_accelerated=True,
             tree_method="epa",         # method to use for tree inference
             nU=None,                   # Upper limit for tree, unless nL is not None 
@@ -36,7 +35,6 @@ class Options(object):
         self.nthreads=nthreads
         self.q_profiles_all=q_profiles_all
         self.search_high_sens=search_high_sens
-        self.q_msa=q_msa,
         self.q_mafft_accelerated=q_mafft_accelerated
         self.tree_method=tree_method
         self.nU = nU
@@ -56,54 +54,42 @@ def main(d_db, infn, opts):
     Returns:
         fn_tree - Filename for tree or None
     """
-    d_db += "/"
-    # rapid check for FASTA format
-    ok = True
-    with open(infn, 'r') as infile:
-        acc = next(infile)
-        ok = bool(re.match("^>.", acc)) 
-        ok = ok and bool(re.match("^[a-zA-Z]+$", next(infile))) 
-    if not ok:
+    if not d_db.endswith("/"):
+        d_db += "/"
+    if not is_fasta(infn):
         print("ERROR: Input file should be FASTA format")
         return
-    # now fix up accession if required
-    fn_for_use = clean_fasta(infn)
+    # Fix up accession if required
+    fn_for_use, _ = clean_fasta(infn)
 
-    og_assign = og_assigner.OGAssignDIAMOND(d_db, opts.nthreads, opts.q_profiles_all)
+    # Assign to tree 
+    og_assign = og_assigner.OGAssignDIAMOND(d_db, 
+                                            opts.nthreads, 
+                                            opts.q_profiles_all)
     og_part = og_assign.assign(fn_for_use, q_ultra_sens=opts.search_high_sens)
-    if og_part is not None:
-        print("Gene assigned to: OG%s" % og_part)
-        db_name = os.path.split(d_db[:-1])[1]
-        with open(infn + ".assign.txt", 'w') as outfile:
-            outfile.write("%s\n%s\n" % (db_name, og_part))
-    else:
+    if og_part is None:
         print("No homologs found for gene in this database")
         return 
+    print("Gene assigned to: OG%s" % og_part)
 
+    # Place in tree
     warn_str = ""
-    if opts.q_msa:
-        # do a tree using an MSA
-        if "iqtree" == opts.tree_method:
-            graft = msa_grafter.MSAGrafter(d_db, opts.nthreads)
-        elif "epa" == opts.tree_method:
-            graft = msa_grafter_epa.MSAGrafter_EPA(d_db, opts.nthreads)
-        else:
-            print("ERROR: %s method has not been implemented" % opts.tree_method)
-            return
-        fn_tree, query_gene, warn_str = graft.add_gene(
-                og_part, 
-                fn_for_use, 
-                infn, 
-                q_mafft_acc=opts.q_mafft_accelerated,
-                )
+    if "iqtree" == opts.tree_method:
+        graft = msa_grafter.MSAGrafter(d_db, opts.nthreads)
+    elif "epa" == opts.tree_method:
+        graft = msa_grafter_epa.MSAGrafter_EPA(d_db, opts.nthreads)
     else:
-        raise Exception("Option not available")
-        # quart = quartets_pairwise_align.PairwiseAlignQuartets(d_db, og_part, fn_for_use)
-        # search = tree_grafter.TreeGrafter(quart, d_db)
-        # This doesn't feel right, iog is fixed in the constructor of quart and hence
-        # in the constructor of search, and yet is passed as a variable here.
-        # search.place_gene(iog)              
-        # search.place_gene() 
+        print("ERROR: %s method has not been implemented" % opts.tree_method)
+        return
+    fn_tree, query_gene_name_final, warn_str = graft.add_gene(
+                                    og_part, 
+                                    fn_for_use, 
+                                    infn, 
+                                    q_mafft_acc=opts.q_mafft_accelerated,
+                                    )
+    db_name = os.path.split(d_db[:-1])[1]
+    with open(infn + ".assign.txt", 'w') as outfile:
+        outfile.write("%s\n%s\n%s\n" % (db_name, og_part, query_gene_name_final))
     
     print("Tree: %s" % fn_tree)  
     if warn_str != "":
@@ -139,6 +125,20 @@ def main(d_db, infn, opts):
     return fn_tree        
 
 
+def is_fasta(infn)
+    # rapid check for FASTA format
+    try:
+        if not os.path.exists(infn):
+            return False
+        with open(infn, 'r') as infile:
+            acc = next(infile)
+            ok = bool(re.match("^>.", acc)) 
+            ok = ok and bool(re.match("^[a-zA-Z]+$", next(infile))) 
+    except:
+        return False
+    return ok
+
+
 def clean_fasta(infn):
     """
     If the accession contains problematic characters write a new file and return
@@ -160,7 +160,7 @@ def clean_fasta(infn):
             outfile.write(">%s\n" % name_cleaned)
             for l in infile:
                 outfile.write(l)
-        return fn_for_use
+        return fn_for_use, name_cleaned
 
 
 def gene_to_species(name):
@@ -245,7 +245,6 @@ if __name__ == "__main__":
             nthreads=args.nthreads,
             q_profiles_all=args.profiles_all,
             search_high_sens=args.high_sens,
-            q_msa=True,
             q_mafft_accelerated=not args.mafft_defaults,
             tree_method=args.tree_method,
             nU=args.upper,
