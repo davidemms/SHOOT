@@ -6,7 +6,7 @@ import argparse
 import subprocess
 from collections import Counter
 
-from . import og_assigner
+import og_assigner
 
 
 class OGAssigner_mmseqs(og_assigner.OGAssigner):

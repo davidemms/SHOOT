@@ -12,7 +12,7 @@ import argparse
 
 import ete3
 
-from . import fasta_writer
+import fasta_writer
 
 def split_tree(fn_tree, fn_msa, n_taxa, q_outgroup):
     """

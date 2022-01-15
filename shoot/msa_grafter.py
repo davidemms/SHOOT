@@ -8,7 +8,7 @@ import subprocess
 
 import ete3
 
-from . import database
+import database
 
 class MSAGrafter(object):
     def __init__(self, d_db, nthreads):

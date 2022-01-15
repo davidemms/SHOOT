@@ -7,7 +7,7 @@ import argparse
 
 import ete3
 
-from . import fasta_writer
+import fasta_writer
 
 def write_fasta(args):
     """

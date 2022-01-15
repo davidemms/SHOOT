@@ -13,7 +13,7 @@ import subprocess
 
 import ete3
 
-from . import msa_grafter
+import msa_grafter
 
 class MSAGrafter_EPA(msa_grafter.MSAGrafter):
     def __init__(self, *args, **kwargs):

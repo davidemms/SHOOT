@@ -1,7 +1,7 @@
 import sys
 import Bio.SeqIO
 
-from . import database
+import database
 
 
 class Quartets(object):

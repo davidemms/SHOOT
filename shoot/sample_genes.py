@@ -16,7 +16,7 @@ import numpy as np
 # from Bio.Phylo.TreeConstruction import DistanceCalculator
 from Bio import AlignIO
 
-from . import fasta_writer
+import fasta_writer
 
 
 def get_embedding_vectors():

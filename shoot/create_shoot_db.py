@@ -15,8 +15,8 @@ import random
 import subprocess
 import string
 
-from . import fasta_writer
-from . import sample_genes
+import fasta_writer
+import sample_genes
 
 
 def get_orthogroups(clustersFilename):
