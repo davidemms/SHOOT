@@ -5,10 +5,9 @@ import glob
 
 import ete3
 
-import og_assigner
-import database
-
-import deeptree
+from . import og_assigner
+from . import database
+from . import deeptree
 
 class OGAssignQuartets(og_assigner.OGAssignDIAMOND):
     """

@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import sys
 import gzip
 import string

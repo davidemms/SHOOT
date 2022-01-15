@@ -7,11 +7,11 @@ import csv
 import argparse
 from collections import defaultdict
 
-import og_assigner
-import tree_grafter
-import msa_grafter
-import msa_grafter_epa
-# import quartets_pairwise_align
+from . import og_assigner
+from . import tree_grafter
+from . import msa_grafter
+from . import msa_grafter_epa
+# from . import quartets_pairwise_align
 
 import ete3
 

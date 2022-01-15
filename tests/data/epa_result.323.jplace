@@ -1,0 +1,19 @@
+{
+  "tree": "((((((Bacteroides_thetaiotaomicron_Q8A131:0.2010910000{0},Bacteroides_thetaiotaomicron_Q8A9N1:0.2522550000{1})100:0.2572580000{2},Bacteroides_thetaiotaomicron_Q8A6J4:0.4193720000{3})78:0.0466408000{4},(Leptospira_interrogans_Q8EZU3:0.7202940000{5},Nematostella_vectensis_A7T2V2:0.3278840000{6})91:0.1220650000{7})91:0.0884722000{8},(Dictyoglomus_turgidum_B8E0L3:0.3398260000{9},Dictyoglomus_turgidum_B8E1S2:0.4180280000{10})100:0.3275340000{11})99:0.1068130000{12},((((Gloeobacter_violaceus_Q7NHK5:0.0854017000{13},(Gloeobacter_violaceus_Q7NI58:0.0704336000{14},Gloeobacter_violaceus_Q7NKT6:0.1402690000{15})100:0.2130840000{16})100:0.0990197000{17},(Synechocystis_sp_P73557:0.0651850000{18},Synechocystis_sp_Q57014_RBPA:0.2414070000{19})100:0.3305200000{20})100:0.1901120000{21},Leptospira_interrogans_Q8F4W8:0.5501770000{22})76:0.0073728200{23},Rhodopirellula_baltica_Q7UEZ2:0.2955900000{24})70:0.0593416000{25})78:0.0689816000{26},SHOOTOUTGROUP_Drosophila_melanogaster_Q8SX83_SPEN:3.3370600000{27});",
+  "placements": 
+  [
+    {"p": [
+      [21, -1557.6371452223, 0.3490507267, 0.0776581828, 0.5177844077],
+      [16, -1557.8159475927, 0.2919010544, 0.0469056946, 0.4356031356],
+      [17, -1558.3736254818, 0.1671241586, 0.0684407130, 0.5164703870],
+      [15, -1559.1053813133, 0.0803973463, 0.1402640000, 0.4384956601],
+      [14, -1559.1055146000, 0.0803866311, 0.0704286000, 0.4384947358],
+      [13, -1560.0540554673, 0.0311342038, 0.0853967000, 0.5222212951]
+      ],
+    "n": ["Caenorhabditis_elegans_O62337"]
+    }
+  ],
+  "metadata": {"invocation": "epa-ng -T 32 -m LG --redo --tree /lv01/data/emms/SHOOT/TEST_DATA/run3/UniProt_split//Gene_Trees/subtrees/sub/OG0000004.0.tre --ref-msa /lv01/data/emms/SHOOT/TEST_DATA/run3/UniProt_split/Tests/Test0323.fa.sh.msa.fa.ref.fa --query /lv01/data/emms/SHOOT/TEST_DATA/run3/UniProt_split/Tests/Test0323.fa.sh.msa.fa.query.fa --preserve-rooting on --outdir /lv01/data/emms/SHOOT/TEST_DATA/run3/UniProt_split/Tests/Test0323.fa.sh.msa.fa_epa/ "},
+  "version": 3,
+  "fields": ["edge_num", "likelihood", "like_weight_ratio", "distal_length", "pendant_length"]
+}

@@ -6,13 +6,14 @@ we don't have to place a gene so specifically (in such a small subtree) using DI
 and instead can rely more on tree inference methods to put a gene in the correct 
 place.
 """
+import json
 import os
 import re
 import subprocess
 
 import ete3
 
-import msa_grafter
+from . import msa_grafter
 
 class MSAGrafter_EPA(msa_grafter.MSAGrafter):
     def __init__(self, *args, **kwargs):
@@ -59,6 +60,7 @@ class MSAGrafter_EPA(msa_grafter.MSAGrafter):
                 subprocess.call("epa-ng -T %d -m LG --redo --tree %s --ref-msa %s --query %s --preserve-rooting on --outdir %s" % (self.nthreads, fn_tree_input, fn_ref, fn_query, out_dir), shell=True, stdout=FNULL, stderr=FNULL)
             results_fn = out_dir + "epa_result.jplace"
             fn_tree_new = self.place_gene_gappa(results_fn)
+            self.add_support(results_fn, fn_tree_new)
         elif n_seqs_123many == 3:
             # have minimum number of sequences for a tree, by no original tree
             subprocess.call("iqtree -nt %d -quiet -m LG -fast -redo -s %s" % (self.nthreads, fn_msa), shell=True)
@@ -88,6 +90,25 @@ class MSAGrafter_EPA(msa_grafter.MSAGrafter):
     #     # ete can't be used as it can't read EPA's stupid format
     #     return fn_tree
 
+    @staticmethod
+    def add_support(results_fn, fn_tree_new):
+        t = ete3.Tree(fn_tree_new)
+        max_support = max(n.support for n in t.traverse())
+        gene, support = MSAGrafter_EPA.get_gene_support(results_fn)
+        if max_support > 1.0:
+            support *= 100.
+        n = (t & gene).up
+        n.support = support
+        t.write(outfile=fn_tree_new)
+
+    @staticmethod
+    def get_gene_support(results_fn):
+        i_support = 2
+        with open(results_fn, 'r') as infile:
+            x = json.load(infile)
+        gene = x['placements'][0]['n'][0]
+        support = x['placements'][0]['p'][0][i_support]
+        return gene, support
 
     def place_gene_gappa(self, jplace_fn):
         d, fn = os.path.split(jplace_fn)

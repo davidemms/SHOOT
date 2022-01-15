@@ -1,0 +1,14 @@
+{
+  "tree": "((((Anopheles_gambiae_Q7PY88:1.0034100000{0},Schizosaccharomyces_pombe_P87061_TEA1:0.6470480000{1})100:0.1034070000{2},Nematostella_vectensis_A7RUR7:1.0372700000{3})100:0.2597030000{4},(((Oryza_sativa_A0A0N7KFI1:0.0230994000{5},Oryza_sativa_A0A0P0VB25:0.2107200000{6})100:0.1222920000{7},Zea_mays_A0A1D6Q3E6:0.1875930000{8})100:0.2530920000{9},(Oryza_sativa_Q53NA8:0.0648339000{10},(Zea_mays_A0A1D6F561:0.0208962000{11},Zea_mays_C0PDT7:0.0317190000{12})100:0.0571390000{13})100:0.3776340000{14})100:0.5188820000{15})100:0.4413750000{16},SHOOTOUTGROUP_Leishmania_major_Q4Q9Y2:2.4378800000{17});",
+  "placements": 
+  [
+    {"p": [
+      [17, -4440.4559620880, 1.0000000000, 1.1842985229, 0.4536924047]
+      ],
+    "n": ["Arabidopsis_thaliana_Q0WW40_FBK5"]
+    }
+  ],
+  "metadata": {"invocation": "epa-ng -T 32 -m LG --redo --tree /lv01/data/emms/SHOOT/TEST_DATA/run3/UniProt_split//Gene_Trees/subtrees/sub/OG0000013.1.tre --ref-msa /lv01/data/emms/SHOOT/TEST_DATA/run3/UniProt_split/Tests/Test0167.fa.sh.msa.fa.ref.fa --query /lv01/data/emms/SHOOT/TEST_DATA/run3/UniProt_split/Tests/Test0167.fa.sh.msa.fa.query.fa --preserve-rooting on --outdir /lv01/data/emms/SHOOT/TEST_DATA/run3/UniProt_split/Tests/Test0167.fa.sh.msa.fa_epa/ "},
+  "version": 3,
+  "fields": ["edge_num", "likelihood", "like_weight_ratio", "distal_length", "pendant_length"]
+}

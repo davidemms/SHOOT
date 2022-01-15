@@ -1,6 +1,6 @@
 import Bio.SeqIO
 
-import quartets
+from . import quartets
 
 
 class PairwiseAlignQuartets(quartets.Quartets):

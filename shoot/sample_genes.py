@@ -8,14 +8,15 @@ What to try?
 import os
 import sys
 import random
-import numpy as np
 import argparse
-from sklearn import cluster
 from collections import defaultdict
+
+from sklearn import cluster
+import numpy as np
 # from Bio.Phylo.TreeConstruction import DistanceCalculator
 from Bio import AlignIO
 
-import fasta_writer
+from . import fasta_writer
 
 
 def get_embedding_vectors():

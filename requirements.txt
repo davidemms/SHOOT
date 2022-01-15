@@ -1,3 +1,4 @@
 ete3
 sklearn
 biopython
+pytest
