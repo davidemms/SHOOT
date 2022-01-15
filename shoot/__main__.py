@@ -47,15 +47,13 @@ def main(d_db, infn, opts):
     """
     Run SHOOT
     Args:
-        d_db - Input directory containing SHOOT database
+        d_db - Input directory name (standard format) containing SHOOT database 
         infn - Query FASTA filename
         opts - Options object
 
     Returns:
         fn_tree - Filename for tree or None
     """
-    if not d_db.endswith("/"):
-        d_db += "/"
     if not is_fasta(infn):
         print("ERROR: Input file should be FASTA format")
         return
@@ -87,7 +85,7 @@ def main(d_db, infn, opts):
                                     infn, 
                                     q_mafft_acc=opts.q_mafft_accelerated,
                                     )
-    db_name = os.path.split(d_db[:-1])[1]
+    db_name = os.path.basename(d_db)
     with open(infn + ".assign.txt", 'w') as outfile:
         outfile.write("%s\n%s\n%s\n" % (db_name, og_part, query_gene_name_final))
     
@@ -220,6 +218,13 @@ def add_orthologs_to_file(writer, genes, overlap):
         writer.writerow([sp, ", ".join(species_to_genes[sp])])
 
 
+def clean_dir_name(dname):
+    while dname.endswith("/"):
+        dname = dname[:-1]
+    dname += "/"
+    return dname
+    
+    
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("infile", help= "Input FASTA filename of the query sequence")
@@ -241,6 +246,7 @@ if __name__ == "__main__":
     # threads
     parser.add_argument("-n", "--nthreads", type=int, default=16)
     args, unknown = parser.parse_known_args()
+    db = clean_dir_name(args.db)
     opts = Options(
             nthreads=args.nthreads,
             q_profiles_all=args.profiles_all,
@@ -252,5 +258,5 @@ if __name__ == "__main__":
             q_print=args.print_tree, 
             q_orthologs=args.orthologs,
             )
-    main(args.db, args.infile, opts)
+    main(db, args.infile, opts)
 
