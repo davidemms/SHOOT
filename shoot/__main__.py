@@ -78,67 +78,68 @@ def main(d_db, infn, opts):
         if opts.q_ambiguous:
             print("\nWill attempt placement in eacho fo these trees")
         else:
-            og_part = ogs[0]
-            print("\nWill attempt placement best hit: %s" % og_part)
+            ogs = ogs[:1]
+            print("\nWill attempt placement best hit: %s" % ogs[0])
     else:
         # Unambiguous placement
-        og_part = ogs[0]
-        print("Sequence assigned to homolog group %s with e-value %g" % (og_part, scores[0])) 
+        print("Sequence assigned to homolog group %s with e-value %g" % (ogs[0], scores[0])) 
         
-
-    # Place in tree
-    warn_str = ""
-    if "iqtree" == opts.tree_method:
-        graft = msa_grafter.MSAGrafter(d_db, opts.nthreads)
-    elif "epa" == opts.tree_method:
-        graft = msa_grafter_epa.MSAGrafter_EPA(d_db, opts.nthreads)
-    else:
-        print("ERROR: %s method has not been implemented" % opts.tree_method)
-        return
-    fn_tree, query_gene_name_final, warn_str = graft.add_gene(
-                                    og_part, 
-                                    fn_for_use, 
-                                    infn, 
-                                    q_mafft_acc=opts.q_mafft_accelerated,
-                                    tree_method=opts.tree_method,
-                                    )
-    db_name = os.path.basename(d_db[:-1])
-    with open(infn + ".assign.txt", 'w') as outfile:
-        outfile.write("%s\n%s\n%s\n" % (db_name, og_part, query_gene_name_final))
     
-    print("Tree: %s" % fn_tree)  
-    if warn_str != "":
-        print("WARNING: " + warn_str) 
+    with open(infn + ".assign.txt", 'w') as outfile:
+        outfile.write("%s\n" % (db_name))
+    for og_part in ogs:
+        # Place in tree
+        warn_str = ""
+        if "iqtree" == opts.tree_method:
+            graft = msa_grafter.MSAGrafter(d_db, opts.nthreads)
+        elif "epa" == opts.tree_method:
+            graft = msa_grafter_epa.MSAGrafter_EPA(d_db, opts.nthreads)
+        else:
+            print("ERROR: %s method has not been implemented" % opts.tree_method)
+            return
+        fn_tree, query_gene_name_final, warn_str = graft.add_gene(
+                                        og_part, 
+                                        fn_for_use, 
+                                        infn, 
+                                        q_mafft_acc=opts.q_mafft_accelerated,
+                                        tree_method=opts.tree_method,
+                                        )
+        db_name = os.path.basename(d_db[:-1])
+        with open(infn + ".assign.txt", 'a') as outfile:
+            outfile.write("%s\t%s\n" % (og_part, query_gene_name_final))
         
-    q_need_to_print = opts.q_print
-    if opts.nU is not None:
-        # if only nL is specified alone that has no effect
-        t = ete3.Tree(fn_tree)
-        if len(t) > opts.nU:
-            node = t & query_gene
-            while len(node) < opts.nU:
-                node_prev = node
-                n_taxa_prev = len(node)
-                node = node.up
-            # now there are more than nU genes in this tree, step down one
-            # unless it is fewer than nL
-            node = node_prev if (opts.nL is None or n_taxa_prev >= opts.nL) else node
-            nwk_str = node.write()
-            with open(fn_tree, 'w') as outfile:
-                outfile.write(nwk_str)
-            if q_need_to_print:
-                print(nwk_str)
-                q_need_to_print = False
+        print("Tree: %s" % fn_tree)  
+        if warn_str != "":
+            print("WARNING: " + warn_str) 
+            
+        q_need_to_print = opts.q_print
+        if opts.nU is not None:
+            # if only nL is specified alone that has no effect
+            t = ete3.Tree(fn_tree)
+            if len(t) > opts.nU:
+                node = t & query_gene
+                while len(node) < opts.nU:
+                    node_prev = node
+                    n_taxa_prev = len(node)
+                    node = node.up
+                # now there are more than nU genes in this tree, step down one
+                # unless it is fewer than nL
+                node = node_prev if (opts.nL is None or n_taxa_prev >= opts.nL) else node
+                nwk_str = node.write()
+                with open(fn_tree, 'w') as outfile:
+                    outfile.write(nwk_str)
+                if q_need_to_print:
+                    print(nwk_str)
+                    q_need_to_print = False
 
-    if q_need_to_print:
-        with open(fn_tree, 'r') as infile:
-            print(next(infile).rstrip())   # remove any trailing newline characters
+        if q_need_to_print:
+            with open(fn_tree, 'r') as infile:
+                print(next(infile).rstrip())   # remove any trailing newline characters
 
-    if opts.q_orthologs:
-        fn_ologs = fn_for_use + ".sh.orthologs.tsv"
-        write_orthologs(fn_tree, fn_ologs, query_gene)
-    return fn_tree        
-
+        if opts.q_orthologs:
+            fn_ologs = fn_for_use + ".sh.orthologs.tsv"
+            write_orthologs(fn_tree, fn_ologs, query_gene)
+ 
 
 def is_fasta(infn):
     # rapid check for FASTA format
