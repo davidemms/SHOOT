@@ -87,7 +87,7 @@ def main(d_db, infn, opts):
     db_name = os.path.basename(d_db[:-1]) 
     with open(infn + ".assign.txt", 'w') as outfile:
         outfile.write("%s\n" % (db_name))
-    for i_tree, og_part, score in enumerate(ogs, scores):
+    for i_tree, (og_part, score) in enumerate(zip(ogs, scores)):
         # Place in tree
         warn_str = ""
         if "iqtree" == opts.tree_method:
