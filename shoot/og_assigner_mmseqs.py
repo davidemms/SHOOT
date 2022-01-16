@@ -31,12 +31,12 @@ class OGAssigner_mmseqs(og_assigner.OGAssigner):
         else:
             fn_base = infn
         fn_results = self.run_mmseqs(infn, fn_base, q_ultra_sens=q_ultra_sens)
-        iog = self.og_from_mmseqs_results(fn_results)
-        if not q_ultra_sens and iog is None:
+        ogs, scores = self.og_from_mmseqs_results(fn_results)
+        if not q_ultra_sens and len(ogs) == 0:
             # Try again with a more sensitive search
             fn_results = self.run_mmseqs(infn, fn_base, q_ultra_sens=True)
-            iog = self.og_from_mmseqs_results(fn_results)
-        return iog
+            ogs, scores = self.og_from_mmseqs_results(fn_results)
+        return ogs, scores
     
     def run_mmseqs(self, fn_query, fn_out_base, q_ultra_sens=False):
         """
@@ -82,4 +82,14 @@ class OGAssigner_mmseqs(og_assigner.OGAssigner):
         sortedTuples = sorted(zip(scores, ogs))
         scores = [i for i, j in sortedTuples]
         ogs = [j for i, j in sortedTuples]
+        if len(ogs) > 0:
+            # filter out all ogs other than those which are potentially worth considering
+            sliver = np.nextafter(0, 1)
+            scores_ml10 = [-np.log10(s+sliver) for s in scores]
+                s0 = scores_ml10[0]
+            scores_ml10 = [s for s in scores_ml10 if s0-s<10]
+            ogs = ogs[:len(scores_ml10)]
+            scores = scores[:len(scores_ml10)]
+        else:
+            return ogs, scores
         return ogs[0]

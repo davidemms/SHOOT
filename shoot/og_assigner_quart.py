@@ -27,13 +27,14 @@ class OGAssignQuartets(og_assigner.OGAssignDIAMOND):
             iog - index of OG
         """
         fn_results = self.run_diamond(infn, infn)
-        iog = self.og_from_diamond_results(fn_results, q_ignore_sub=True)
-        if iog is None:
+        ogs, scores = self.og_from_diamond_results(fn_results, q_ignore_sub=True)
+        if len(ogs) == 0:
             # Try again with a more sensitive search
             fn_results = self.run_diamond(infn, infn, q_ultra_sens=True)
-            iog = self.og_from_diamond_results(fn_results)
-        if iog is None:
-            return iog
+            ogs, scores = self.og_from_diamond_results(fn_results)
+        if len(ogs) == 0:
+            return ogs, scores
+        iog = ogs[0]   # we don't explore the ambiguity as we do with DIAMOND or MMseqs
         print("Got: " + iog)
         # if there is no supertree then there is nothing more to do
         if not os.path.exists(self.db.fn_tree_super(int(iog.split(".")[0]))):

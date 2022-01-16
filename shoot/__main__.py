@@ -31,6 +31,7 @@ class Options(object):
             nL=None,                   # Exceed nU if alternative is a tree < nL
             q_print=False,             # print tree to stdout 
             q_orthologs=False,         # write orthologs to INFN.sh.orthologs.tsv
+            q_ambiguous=False,         # If ambiguity, do each potential tree
             ):
         self.nthreads=nthreads
         self.q_profiles_all=q_profiles_all
@@ -41,6 +42,7 @@ class Options(object):
         self.nL = nL
         self.q_print = q_print
         self.q_orthologs = q_orthologs
+        self.q_ambiguous = q_ambiguous
 
 
 def main(d_db, infn, opts):
@@ -64,11 +66,26 @@ def main(d_db, infn, opts):
     og_assign = og_assigner.OGAssignDIAMOND(d_db, 
                                             opts.nthreads, 
                                             opts.q_profiles_all)
-    og_part = og_assign.assign(fn_for_use, q_ultra_sens=opts.search_high_sens)
-    if og_part is None:
-        print("No homologs found for gene in this database")
+    ogs, scores = og_assign.assign(fn_for_use, q_ultra_sens=opts.search_high_sens)
+    og_part
+    if len(ogs) == 0:
+        print("No homologs found for sequence in this database")
         return 
-    print("Gene assigned to: OG%s" % og_part)
+    if len(ogs) > 1:
+        print("Assignment to homolog group is ambiguous, %d possibilities:" % len(ogs))
+        for ogs, score in zip(ogs, scores):
+            print("Group       E-value")
+            print("% 11s %g" % (og, score))
+        if opts.q_ambiguous:
+            print("\nWill attempt placement in eacho fo these trees")
+        else:
+            og_part = ogs[0]
+            print("\nWill attempt placement best hit: %s" % og_part)
+    else:
+        # Unambiguous placement
+        og_part = ogs[0]
+        print("Sequence assigned to homolog group %s with e-value %g" % (og_part, scores[0])) 
+        
 
     # Place in tree
     warn_str = ""
@@ -245,6 +262,8 @@ if __name__ == "__main__":
     parser.add_argument("--mafft_defaults", action="store_true", 
                         help= "Use mafft defaults rather than accelerated options")
     parser.add_argument("-t", "--tree_method", default="epa", choices={"epa", "iqtree"})
+    parser.add_argument("-a", "--ambiquity", action='store_true', 
+                        help="Add gene to each tree in case of ambiguous assignment")
     # threads
     parser.add_argument("-n", "--nthreads", type=int, default=16)
     args, unknown = parser.parse_known_args()
@@ -259,6 +278,7 @@ if __name__ == "__main__":
             nL=args.lower, 
             q_print=args.print_tree, 
             q_orthologs=args.orthologs,
+            q_ambiguous=args.ambiquity
             )
     try:
         main(db, args.infile, opts)

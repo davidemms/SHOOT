@@ -6,6 +6,8 @@ import argparse
 import subprocess
 from collections import Counter
 
+import numpy as np
+
 
 class OGAssigner(object):
     """
@@ -47,12 +49,12 @@ class OGAssignDIAMOND(OGAssigner):
         else:
             fn_base = infn
         fn_results = self.run_diamond(infn, fn_base, q_ultra_sens=q_ultra_sens)
-        iog = self.og_from_diamond_results(fn_results)
-        if ((not q_ultra_sens) or (not self.q_all_seqs_default)) and iog is None:
+        ogs, scores = self.og_from_diamond_results(fn_results)
+        if ((not q_ultra_sens) or (not self.q_all_seqs_default)) and len(ogs) == 0:
             # Try again with a more sensitive search & all sequences
             fn_results = self.run_diamond(infn, fn_base, q_ultra_sens=True, q_all_seqs=True)
-            iog = self.og_from_diamond_results(fn_results)
-        return iog
+            ogs, scores = self.og_from_diamond_results(fn_results)
+        return ogs, scores
     
     def run_diamond(self, fn_query, fn_out_base, q_ultra_sens=False, q_all_seqs=False):
         """
@@ -79,7 +81,10 @@ class OGAssignDIAMOND(OGAssigner):
             fn_og_results_out - fn of compressed DIAMOND results
             q_ignore_sub - ignore any subtrees and just look at overall OGs
         Returns:
-            iog        : str "int.int" or "int" otherwise None
+            iog        : List[str] "int.int" or "int" of ordered, ambiguous assignments
+        Info:
+            Hits to other groups are returned if np.log10 difference is less than 10 
+            and -np.log10 score > difference.
         """
         ogs = []
         scores = []
@@ -92,8 +97,16 @@ class OGAssignDIAMOND(OGAssigner):
         sortedTuples = sorted(zip(scores, ogs))
         scores = [i for i, j in sortedTuples]
         ogs = [j for i, j in sortedTuples]
-        if len(ogs) == 0:
-            # no match
-            return None
+        if len(ogs) > 0:
+            # filter out all ogs other than those which are potentially worth considering
+            sliver = np.nextafter(0, 1)
+            scores_ml10 = [-np.log10(s+sliver) for s in scores]
+                s0 = scores_ml10[0]
+            # in a test of 15k sequences only 12 passed the first test but failed s>(s0-s)
+            # it is not worth arguing over whether it's a good second criteris 
+            # scores = [s for s in scores if s0-s<10 and s>(s0-s)]
+            scores_ml10 = [s for s in scores_ml10 if s0-s<10]
+            ogs = ogs[:len(scores_ml10)]
+            scores = scores[:len(scores_ml10)]
         else:
-            return ogs[0]
+            return ogs, scores
