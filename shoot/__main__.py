@@ -67,7 +67,6 @@ def main(d_db, infn, opts):
                                             opts.nthreads, 
                                             opts.q_profiles_all)
     ogs, scores = og_assign.assign(fn_for_use, q_ultra_sens=opts.search_high_sens)
-    og_part
     if len(ogs) == 0:
         print("No homologs found for sequence in this database")
         return 

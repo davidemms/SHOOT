@@ -101,12 +101,11 @@ class OGAssignDIAMOND(OGAssigner):
             # filter out all ogs other than those which are potentially worth considering
             sliver = np.nextafter(0, 1)
             scores_ml10 = [-np.log10(s+sliver) for s in scores]
-                s0 = scores_ml10[0]
+            s0 = scores_ml10[0]
             # in a test of 15k sequences only 12 passed the first test but failed s>(s0-s)
             # it is not worth arguing over whether it's a good second criteris 
             # scores = [s for s in scores if s0-s<10 and s>(s0-s)]
             scores_ml10 = [s for s in scores_ml10 if s0-s<10]
             ogs = ogs[:len(scores_ml10)]
             scores = scores[:len(scores_ml10)]
-        else:
-            return ogs, scores
+        return ogs, scores
