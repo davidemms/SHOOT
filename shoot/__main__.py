@@ -72,22 +72,22 @@ def main(d_db, infn, opts):
         return 
     if len(ogs) > 1:
         print("Assignment to homolog group is ambiguous, %d possibilities:" % len(ogs))
-        for ogs, score in zip(ogs, scores):
-            print("Group       E-value")
-            print("% 11s %g" % (og, score))
+        print("Group       E-value")
+        for og, score in zip(ogs, scores):
+            print("%-11s %g" % (og, score))
         if opts.q_ambiguous:
-            print("\nWill attempt placement in eacho fo these trees")
+            print("\nWill attempt placement in each of these trees.")
         else:
             ogs = ogs[:1]
-            print("\nWill attempt placement best hit: %s" % ogs[0])
+            print("\nWill attempt placement n best hit tree: %s" % ogs[0])
     else:
         # Unambiguous placement
         print("Sequence assigned to homolog group %s with e-value %g" % (ogs[0], scores[0])) 
         
-    
+    db_name = os.path.basename(d_db[:-1]) 
     with open(infn + ".assign.txt", 'w') as outfile:
         outfile.write("%s\n" % (db_name))
-    for og_part in ogs:
+    for i_tree, og_part in enumerate(ogs):
         # Place in tree
         warn_str = ""
         if "iqtree" == opts.tree_method:
@@ -106,7 +106,11 @@ def main(d_db, infn, opts):
                                         )
         db_name = os.path.basename(d_db[:-1])
         with open(infn + ".assign.txt", 'a') as outfile:
-            outfile.write("%s\t%s\n" % (og_part, query_gene_name_final))
+            outfile.write("%d\t%s\t%s\n" % (i_tree,og_part, query_gene_name_final))
+        if len(ogs) > 1:
+            fn_old = fn_tree
+            fn_tree = os.path.splitext(fn_tree)[0] + ".%d.tre" % i_tree
+            os.rename(fn_old, fn_tree) 
         
         print("Tree: %s" % fn_tree)  
         if warn_str != "":

@@ -97,6 +97,9 @@ class OGAssignDIAMOND(OGAssigner):
         sortedTuples = sorted(zip(scores, ogs))
         scores = [i for i, j in sortedTuples]
         ogs = [j for i, j in sortedTuples]
+        unique = [i for i in range(len(ogs)) if ogs[i] not in ogs[:i]]
+        ogs = [ogs[i] for i in unique]
+        scores = [scores[i] for i in unique]
         if len(ogs) > 0:
             # filter out all ogs other than those which are potentially worth considering
             sliver = np.nextafter(0, 1)
