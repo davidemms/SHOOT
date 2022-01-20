@@ -41,7 +41,8 @@ class OGAssignDIAMOND(OGAssigner):
         Args:
             infn - Input FASTA filename
         Returns
-            iog - index of OG
+            iogs - List[index of OG]
+            scores - List[e-values]
         """
         ext_cleaned = ".sh.cleaned"
         if infn.endswith(ext_cleaned):

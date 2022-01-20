@@ -11,6 +11,7 @@ import og_assigner
 import tree_grafter
 import msa_grafter
 import msa_grafter_epa
+import utils
 # import quartets_pairwise_align
 
 import ete3
@@ -32,6 +33,7 @@ class Options(object):
             q_print=False,             # print tree to stdout 
             q_orthologs=False,         # write orthologs to INFN.sh.orthologs.tsv
             q_ambiguous=False,         # If ambiguity, do each potential tree
+            q_full_tree=False,         # Use phylogenetic methods on full tree regardless
             ):
         self.nthreads=nthreads
         self.q_profiles_all=q_profiles_all
@@ -43,6 +45,7 @@ class Options(object):
         self.q_print = q_print
         self.q_orthologs = q_orthologs
         self.q_ambiguous = q_ambiguous
+        self.q_full_tree= q_full_tree
 
 
 def main(d_db, infn, opts):
@@ -70,6 +73,8 @@ def main(d_db, infn, opts):
     if len(ogs) == 0:
         print("No homologs found for sequence in this database")
         return 
+    if opts.q_full_tree:
+        ogs, scores = utils.og_parts_to_ogs(ogs, scores)
     if len(ogs) > 1:
         print("Assignment to homolog group is ambiguous, %d possibilities:" % len(ogs))
         print("Group       E-value")
@@ -268,6 +273,8 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--tree_method", default="epa", choices={"epa", "iqtree"})
     parser.add_argument("-a", "--ambiquity", action='store_true', 
                         help="Add gene to each tree in case of ambiguous assignment")
+    parser.add_argument("-f", "--full", action='store_true', 
+                        help="Always add phylogenetically using full tree not super-tree method")
     # threads
     parser.add_argument("-n", "--nthreads", type=int, default=16)
     args, unknown = parser.parse_known_args()
@@ -282,7 +289,8 @@ if __name__ == "__main__":
             nL=args.lower, 
             q_print=args.print_tree, 
             q_orthologs=args.orthologs,
-            q_ambiguous=args.ambiquity
+            q_ambiguous=args.ambiquity,
+            q_full_tree=args.full,
             )
     try:
         main(db, args.infile, opts)

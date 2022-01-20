@@ -16,6 +16,7 @@ class MSAGrafter(object):
         Add a gene to a tree by extending the MSA and re-inferring the tree.
         Args:
             d_db - Database directory
+            nthreads - Number of threads
         """
         self.db = database.Database(d_db)
         self.nthreads = nthreads
