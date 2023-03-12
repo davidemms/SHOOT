@@ -75,7 +75,8 @@ class OGAssignDIAMOND(OGAssigner):
             subprocess.call(cmd_list,stdout=FNULL, stderr=FNULL)
         return fn_og_results_out + ".gz"
 
-    def og_from_diamond_results(self, fn_og_results_out, q_ignore_sub = False):
+    @staticmethod
+    def og_from_diamond_results(fn_og_results_out, q_ignore_sub=False):
         """
         Get the OG based on the DIAMOND results
         Args:
