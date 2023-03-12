@@ -1,4 +1,5 @@
 ete3
-sklearn
+scikit-learn
 biopython
 pytest
+six

@@ -15,8 +15,7 @@ import random
 import subprocess
 import string
 
-import fasta_writer
-import sample_genes
+from shoot import fasta_writer, ofids, sample_genes
 
 
 def get_orthogroups(clustersFilename):
@@ -83,7 +82,7 @@ def create_mmseqs_database(din, subtrees_dir="Gene_Trees/subtrees_2000"):
         din - Input OrthoFinder results directory
         subtrees_dir - directory containing the split trees to use
     Notes:
-    If the trees have been split into subtres then profiles will be created for 
+    If the trees have been split into subtrees then profiles will be created for
     the subtrees instead.
     """
     wd = din + "WorkingDirectory/"
@@ -127,60 +126,70 @@ def create_mmseqs_database(din, subtrees_dir="Gene_Trees/subtrees_2000"):
     # subprocess.call(["diamond", "makedb", "--in", fn_fasta, "-d", fn_diamond_db])
 
 
-def create_full_database(din, subtrees_dir):
-    """
-    Create a database with every gene sequence
-    """
-    subtrees_label = os.path.split(subtrees_dir)[1]
-    pat_super = din + subtrees_dir + "/super/OG%07d.super.tre"
-    pat_sub_msa_glob = din + subtrees_dir + "/msa_sub/OG%07d.*.fa"
-    fn_fasta = din + "diamond_all_sequences.%s.fa" % subtrees_label
-    fn_diamond_db = fn_fasta + ".db"
-    n_og = max([int(os.path.basename(fn)[2:].split(".")[0]) for fn in   glob.glob(din + "Orthogroup_Sequences/OG*fa")]) 
-    fw = fasta_writer.FastaWriter(din + "Orthogroup_Sequences/OG*fa", qGlob=True)
-    d_to_ogs = dict()
-    for iog in range(n_og):
-        if iog % 1000 == 0:
-            print(iog)
-        og_id = "%07d" % iog
-        q_subtrees = os.path.exists(pat_super % iog)
-        if q_subtrees: 
-            print("Subtrees: %d" % iog)
-        fn_msa_unsplit = din + "MultipleSequenceAlignments/OG%07d.fa" % iog
-        if q_subtrees:
-            fns_msa = list(glob.glob(pat_sub_msa_glob % iog))
-        elif os.path.exists(fn_msa_unsplit):
-            fns_msa = [fn_msa_unsplit, ]
-        for fn in fns_msa:
-            i_part = os.path.basename(fn).rsplit(".", 2)[1] if q_subtrees else None
-            genes = [g for g in fasta_writer.FastaWriter(fn).SeqLists.keys() if not g.startswith("SHOOTOUTGROUP_")]
-            d_to_ogs.update({g:("%07d.%s_" % (iog, i_part) if q_subtrees else "%07d_" % iog) + g for g in genes})
-    fw.WriteSeqsToFasta_withNewAccessions(d_to_ogs.keys(), fn_fasta, d_to_ogs)
-    subprocess.call(["diamond", "makedb", "--in", fn_fasta, "-d", fn_diamond_db])
+# def create_full_database(din, subtrees_dir="", q_ids=False):
+#     """
+#     Create a database with every gene sequence
+#     """
+#     if subtrees_dir:
+#         subtrees_label = "." + os.path.split(subtrees_dir)[1]
+#         pat_super = din + subtrees_dir + "/super/OG%07d.super.tre"
+#         pat_sub_msa_glob = din + subtrees_dir + "/msa_sub/OG%07d.*.fa"
+#     else:
+#         subtrees_label = ""
+#     if q_ids:
+#         ids = ofids.OrthoFinderIDs(wd).Spec_SeqDict()
+#         ids_rev = {v:k for k,v in ids.items()}
+#     fn_fasta = din + "profiles_all_sequences%s.fa" % subtrees_label
+#     fn_diamond_db = fn_fasta + ".db"
+#     n_og = max([int(os.path.basename(fn)[2:].split(".")[0]) for fn in glob.glob(din + "Orthogroup_Sequences/OG*fa")])
+#     # fw = fasta_writer.FastaWriter(din + "MultipleSequenceAlignments/OG*fa", qGlob=True)  # OG sequences are without species prefixes, MSA are with
+#     d_to_ogs = dict()
+#     seq_convert = dict()
+#     nToDo = n_og
+#     for iog in range(n_og):
+#         if iog >= 0 and divmod(iog, 10 if nToDo <= 200 else 100 if nToDo <= 2000 else 1000)[1] == 0:
+#             print("Done %d of %d" % (iog, nToDo))
+#         q_subtrees = subtrees_dir and os.path.exists(pat_super % iog)
+#         if q_subtrees:
+#             print("Subtrees: %d" % iog)
+#         fn_msa_unsplit = wd + "Alignments_ids/OG%07d.fa" % iog
+#         if q_subtrees:
+#             fns_msa = list(glob.glob(pat_sub_msa_glob % iog))
+#         elif os.path.exists(fn_msa_unsplit):
+#             fns_msa = [fn_msa_unsplit, ]
+#         for fn in fns_msa:
+#             i_part = os.path.basename(fn).rsplit(".", 2)[1] if q_subtrees else None
+#             genes = [g for g in fasta_writer.FastaWriter(fn).SeqLists.keys() if not g.startswith("SHOOTOUTGROUP_")]
+#             d_to_ogs.update({g:("%07d.%s_" % (iog, i_part) if q_subtrees else "%07d_" % iog) + g for g in genes})
+#     fw.WriteSeqsToFasta_withNewAccessions(d_to_ogs.keys(), fn_fasta, d_to_ogs)
+#     subprocess.call(["diamond", "makedb", "--in", fn_fasta, "-d", fn_diamond_db])
+#     return fn_fasta
 
 
-def create_profiles_database(din, q_kmeans = True, min_for_profile=20, q_ids=True, divide= 10, 
-                            subtrees_dir="Gene_Trees/subtrees_2000"):
+def create_profiles_database(din, selection="kmeans", min_for_profile=20, q_ids=True, divide=10,
+                            subtrees_dir=""):
     """
     Create a fasta file with profile genes from each orthogroup
     Args:
         din - Input OrthoFinder results directory
+        selection - "kmeans|random|all"  - method to use for sampling genes from orthogroups
         n_for_profile - The number of genes to use from each orthogroup, when available
-        q_kmeans - Should kmeans be used instead of random sampling
         q_ids - Convert subtrees (with user gene accessions) back to IDs for profiles database (should always be true I think)
     Notes:
-    If the trees have been split into subtres then profiles will be created for 
+    If the trees have been split into subtrees then profiles will be created for
     the subtrees instead.
     A file "diamond_profile_sequences.fa.db.dmnd" is created in the OrthoFinder
     directory suitable for use by SHOOT. Each sequence is named <OG>_isp_iseq.
     """
+    if selection not in ("kmeans", "random", "all"):
+        raise RuntimeError("selection method '%s' is not defined" % selection)
     wd = din + "WorkingDirectory/"
-    subtrees_label = os.path.split(subtrees_dir)[1]
-    pat_super = din + subtrees_dir + "/super/OG%07d.super.tre"
-    pat_sub_msa_glob = din + subtrees_dir + "/msa_sub/OG%07d.*.fa"
-    # fn_fasta = din + "diamond_profile_sequences.%s.%d_%s.fa" % (subtrees_label, n_for_profile, "kmeans" if q_kmeans else "random")
-    fn_fasta = din + "diamond_profile_sequences.iqtree.%s.d%d_min%d_%s.fa" % (subtrees_label, divide, min_for_profile, "kmeans" if q_kmeans else "random")
-    fn_diamond_db = fn_fasta + ".db"
+    if subtrees_dir:
+        subtrees_label = "." + os.path.split(subtrees_dir)[1]
+        pat_super = din + subtrees_dir + "/super/OG%07d.super.tre"
+        pat_sub_msa_glob = din + subtrees_dir + "/msa_sub/OG%07d.*.fa"
+    else:
+        subtrees_label = ""
     ogs = get_orthogroups(wd + "clusters_OrthoFinder_I1.5.txt_id_pairs.txt")
     fw = fasta_writer.FastaWriter(wd + "Species*fa", qGlob=True)
     seq_write = []
@@ -189,49 +198,37 @@ def create_profiles_database(din, q_kmeans = True, min_for_profile=20, q_ids=Tru
     # If there are subtrees then we need to convert their IDs in the profile file
     # back to internal IDs
     if q_ids:
-        import ofids
         ids = ofids.OrthoFinderIDs(wd).Spec_SeqDict()
-        # ids = ofids.OrthoFinderIDs(wd).SequenceDict()
-        # print(ids['28_14289'])
-        ids_rev = {v:k for k,v in ids.items()}
+        ids_rev = {v: k for k, v in ids.items()}
+    nToDo = len(ogs)
     for iog, og in enumerate(ogs):
-        # if not os.path.exists(din + subtrees_dir + "/../OG%07d_tree.txt" % iog):
-        #     print("Skipping %d" % iog)
-        #     continue
-        # if iog < 21 or iog > 22:
-        #     continue
-        if iog % 10 == 0 and iog <= 1000:
-            print(iog)
-        n = len(og)
+        if iog >= 0 and divmod(iog, 10 if nToDo <= 200 else 100 if nToDo <= 2000 else 1000)[1] == 0:
+            print("Done %d of %d" % (iog, nToDo))
         og_id = "%07d" % iog
-        # if n < 4:
-        #     og_id = "x%07d" % iog      # indicates no tree
-        # else:
-        #     og_id = "%07d" % iog
-        q_subtrees = os.path.exists(pat_super % iog)
+        q_subtrees = subtrees_dir and os.path.exists(pat_super % iog)
+        fn_msa = wd + "Alignments_ids/OG%07d.fa" % iog
         if q_subtrees: 
             print("Subtrees: %d" % iog)
-        # else:
-        #     continue
-        # print(pat_super % iog)
-        fn_msa_unsplit = wd + "Alignments_ids/OG%07d.fa" % iog
-        fn_seq_unsplit = wd + "Sequences_ids/OG%07d.fa" % iog
-        if q_subtrees:
             fns_msa = list(glob.glob(pat_sub_msa_glob % iog))
-        elif os.path.exists(fn_msa_unsplit):
-            fns_msa = [fn_msa_unsplit, ]
+        elif os.path.exists(fn_msa):
+            fns_msa = [fn_msa, ]
+        else:
+            fns_msa = [wd + "Sequences_ids/OG%07d.fa" % iog, ]
         for fn in fns_msa:
+            if not os.path.exists(fn):
+                print("File does not exist, skipping: %s" % fn)
+                continue
             i_part = os.path.basename(fn).rsplit(".", 2)[1] if q_subtrees else None
             fw_temp = fasta_writer.FastaWriter(fn)
             n_in_og = len(fw_temp.SeqLists)
             n_for_profile = n_in_og // divide
-            n_for_profile = min_for_profile if n_for_profile < min_for_profile else n_for_profile
-            if q_kmeans and len(fw_temp.SeqLists) > n_for_profile:
+            if n_for_profile < min_for_profile:
+                n_for_profile = min_for_profile
+            if selection == "kmeans" and len(fw_temp.SeqLists) > n_for_profile:
                 if q_subtrees:
-                    # MSA needs to be modified    
+                    # MSA needs to be modified
                     letters = string.ascii_lowercase
                     fn_temp = "/tmp/shoot_db_create" + "".join(random.choice(letters) for i in range(6)) + os.path.basename(fn)
-                    
                     fw_temp.WriteSeqsToFasta([g for g in fw_temp.SeqLists if not g.startswith("SHOOTOUTGROUP_")],
                                             fn_temp)
                     fn = fn_temp
@@ -239,12 +236,14 @@ def create_profiles_database(din, q_kmeans = True, min_for_profile=20, q_ids=Tru
                 s = sample_genes.select_from_aligned(fn, n_for_profile, q_trim=False)
                 if q_subtrees:
                     os.remove(fn_temp)
-            else:
+            elif selection == "kmeans" or selection == "random":
                 if q_subtrees:
                     fw_temp = fasta_writer.FastaWriter(fn)
                     og = [g for g in fw_temp.SeqLists if not g.startswith("SHOOTOUTGROUP_")]
                 s = sample_random(og, n_for_profile)
-            if (q_ids and q_subtrees):
+            else:
+                s = [g for g in fasta_writer.FastaWriter(fn).SeqLists.keys() if not g.startswith("SHOOTOUTGROUP_")]
+            if q_ids and q_subtrees:
                 s = [ids_rev[ss] for ss in s]
             if q_subtrees:
                 og_id_full = og_id + "." + i_part
@@ -253,11 +252,14 @@ def create_profiles_database(din, q_kmeans = True, min_for_profile=20, q_ids=Tru
             seq_write.extend(s)
             for ss in s:
                 seq_convert[ss] = og_id_full + "_" + ss
-        # re-write it for each OG so I can check it's going ok
-        # print(seq_write)
-        # print(list(fw.SeqLists.keys())[:10])
+    if selection == "all":
+        fn_fasta = din + "profile_sequences%s.all.fa" % subtrees_label
+    else:
+        fn_fasta = din + "profile_sequences%s.d%d_min%d_%s.fa" % (subtrees_label, divide, min_for_profile, selection)
     fw.WriteSeqsToFasta_withNewAccessions(seq_write, fn_fasta, seq_convert)
+    fn_diamond_db = fn_fasta + ".db"
     subprocess.call(["diamond", "makedb", "--in", fn_fasta, "-d", fn_diamond_db])
+    return fn_fasta
 
 
 if __name__ == "__main__":
@@ -272,14 +274,14 @@ if __name__ == "__main__":
     if not din.endswith("/"):
         din += "/"
     if full_or_profiles == "full":
-        create_full_database(din, subtrees_dir="Gene_Trees/subtrees")
+        create_profiles_database(din, selection="all", subtrees_dir="")
     elif full_or_profiles == "profiles":
         create_profiles_database(din, 
-                                q_kmeans = True, 
+                                selection="kmeans",
                                 min_for_profile=20, 
                                 q_ids=True, 
                                 divide= 10, 
-                                subtrees_dir="Gene_Trees/")
+                                subtrees_dir="")
     elif full_or_profiles == "mmseqs":
         create_mmseqs_database(din)
 

@@ -256,7 +256,7 @@ def clean_dir_name(dname):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("infile", help= "Input FASTA filename of the query sequence")
-    parser.add_argument("db", help= "Database directory, prepared by fol_create_dp.py")
+    parser.add_argument("db", help= "Database directory, prepared by create_shoot_db.py")
     # parser.add_argument("-m", "--msa", action="store_true", help= "Use an MSA tree")
     # Output options
     parser.add_argument("-u", "--upper", type=int, help= "Upper limit for tree, unless -l")

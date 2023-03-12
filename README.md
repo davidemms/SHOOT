@@ -20,7 +20,7 @@ SHOOT allows you to search a protein sequence against a database of gene trees. 
     - Paper: Emms, D.M., Kelly, S. OrthoFinder: phylogenetic orthology inference for comparative genomics. Genome Biol 20, 238 (2019). https://doi.org/10.1186/s13059-019-1832-y
     - GitHub: https://github.com/davidemms/OrthoFinder
     - Tutorials: https://davidemms.github.io/
-3. Run `python create_shoot_db.py RESULTS_DIRECTORY`, replacing "RESULTS_DIRECTORY" with the path to the OrthoFinder results directory from step 1. 
+3. Run `python create_shoot_db.py RESULTS_DIRECTORY full`, replacing "RESULTS_DIRECTORY" with the path to the OrthoFinder results directory from step 1. 
 4. Resolve polytomies (only necessary if using EPA-ng): `python bifurcating_trees.py RESULTS_DIRECTORY`
 
 The OrthoFinder RESULTS_DIRECTORY is now a SHOOT database.
