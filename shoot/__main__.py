@@ -30,10 +30,12 @@ class Options(object):
             tree_method="epa",         # method to use for tree inference
             nU=None,                   # Upper limit for tree, unless nL is not None 
             nL=None,                   # Exceed nU if alternative is a tree < nL
+            outdir='',                 # Default output directory to current input file
             q_print=False,             # print tree to stdout 
             q_orthologs=False,         # write orthologs to INFN.sh.orthologs.tsv
             q_ambiguous=False,         # If ambiguity, do each potential tree
             q_full_tree=False,         # Use phylogenetic methods on full tree regardless
+            overwrite=False,           # To overwrite previous analyses
             ):
         self.nthreads=nthreads
         self.q_profiles_all=q_profiles_all
@@ -42,10 +44,12 @@ class Options(object):
         self.tree_method=tree_method
         self.nU = nU
         self.nL = nL
+        self.outdir = outdir
         self.q_print = q_print
         self.q_orthologs = q_orthologs
         self.q_ambiguous = q_ambiguous
         self.q_full_tree= q_full_tree
+        self.overwrite = overwrite
 
 
 def main(d_db, infn, opts):
@@ -62,6 +66,27 @@ def main(d_db, infn, opts):
     if not is_fasta(infn):
         print("ERROR: Input file should be FASTA format")
         return
+
+    od = infn + '.shoot'
+    if opts.outdir and str(opts.outdir).strip():
+        od = str(opts.outdir).strip()
+    new_infn = os.path.join(od, os.path.basename(infn))
+    if (os.path.exists(od)):
+        if (opts.overwrite):
+            print("WARNING: SHOOT output directory '%s' already exists. Previous results will be replaced." % od)
+            # Only replace if file and not symlink.
+            if os.path.isfile(new_infn) and not os.path.islink(new_infn) and (os.path.realpath(new_infn) != os.path.realpath(infn)):
+                os.remove(new_infn)
+        else:
+            print("WARNING: SHOOT output directory '%s' already exists. Aborting." % od)
+            return
+    else:
+        os.mkdir(od)
+    # Link input fasta to outpur directory if needed.
+    if (os.path.realpath(new_infn) != os.path.realpath(infn)) and not os.path.exists(new_infn):
+        os.symlink(infn, new_infn)
+    infn = new_infn
+
     # Fix up accession if required
     fn_for_use, _ = clean_fasta(infn)
 
@@ -263,6 +288,8 @@ if __name__ == "__main__":
     parser.add_argument("-l", "--lower", type=int, help= "Exceed -u if alternative is < -l")
     parser.add_argument("-p", "--print_tree", action="store_true", help= "Print tree as final line")
     parser.add_argument("-o", "--orthologs", action="store_true", help="Requires database gene names to be 'genus_species_geneID")
+    parser.add_argument("-d", "--output_directory", help="Path where output files should be put.")
+    parser.add_argument("-w", "--overwrite", action="store_true", help="Overwrite previous results")
     # search options
     parser.add_argument("--high_sens", action="store_true", 
                         help= "High sensitivity for homology group search")
@@ -286,11 +313,13 @@ if __name__ == "__main__":
             q_mafft_accelerated=not args.mafft_defaults,
             tree_method=args.tree_method,
             nU=args.upper,
-            nL=args.lower, 
-            q_print=args.print_tree, 
+            nL=args.lower,
+            outdir=args.output_directory,
+            q_print=args.print_tree,
             q_orthologs=args.orthologs,
             q_ambiguous=args.ambiquity,
             q_full_tree=args.full,
+            overwrite=args.overwrite,
             )
     try:
         main(db, args.infile, opts)
