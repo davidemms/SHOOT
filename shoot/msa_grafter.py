@@ -44,7 +44,7 @@ class MSAGrafter(object):
             to name_orig in the final tree
         """
         q_subtree = "." in og_part
-        fn_final_tree = fn_out_base + '.OG' + og_part + ".shoot.tre"
+        fn_final_tree = fn_out_base + ".shoot.tre"
         warn_string = ""
         fn_msa_orig = self.db.fn_msa(og_part)
         if not os.path.exists(fn_msa_orig):
