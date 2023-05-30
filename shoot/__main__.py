@@ -189,7 +189,7 @@ def main(d_db, infn, opts):
                 print(next(infile).rstrip())   # remove any trailing newline characters
 
         if opts.q_orthologs:
-            fn_ologs = fn_for_use + '.OG' + og_part + ".sh.orthologs.tsv"
+            fn_ologs = og_infn + ".sh.orthologs.tsv"
             write_orthologs(fn_tree, fn_ologs, og_genes)
  
 
