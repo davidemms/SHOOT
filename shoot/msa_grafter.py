@@ -31,7 +31,7 @@ class MSAGrafter(object):
         """
         Args:
             og_part - the OG or OG.PART to search in
-            infn - FASTA filename containing the gene sequence
+            infn - FASTA filename containing the gene sequences
             fn_out_base - filenname onto which to build output files 
             q_mafft_acc - use accelerated MAFFT options instead of default
             tree_method - {iqtree,epa}
@@ -53,27 +53,35 @@ class MSAGrafter(object):
         n_seqs_orig_123many = self.n_seqs_1234(fn_msa_orig)
         genes = self.get_gene_names(fn_msa_orig)
         
-        query_name = self.iqtree_names_adjust(self.get_gene_names(infn))[0]
+        org_query_names = self.iqtree_names_adjust(self.get_gene_names(infn))
         genes_set = set(genes)
-        if query_name in genes_set:
-            while query_name in genes_set:
-                query_name = "SHOOT_" + query_name
-            fn_input_to_msa = self.rename_gene(infn, query_name)
+        query_renames = {}
+        query_names = []
+        for query_name in org_query_names:
+            new_query_name = query_name
+            if new_query_name in genes_set:
+                while new_query_name in genes_set:
+                    new_query_name = "SHOOT_" + new_query_name
+                query_renames[query_name] = new_query_name
+            query_names.append(new_query_name)
+        if query_renames:
+            fn_input_to_msa = self.rename_genes(infn, query_renames)
         else:
             fn_input_to_msa = infn
-        genes.append(query_name)
+        # query_names = list(query_renames)
+        genes = genes + query_names
         fn_msa_new = fn_out_base + ".sh.msa.fa"
         mafft_opts = "--retree 1 --maxiterate 0 --nofft" if q_mafft_acc else ""
         subprocess.call("mafft --anysymbol %s --thread %d --quiet --add %s %s > %s" % (
                 mafft_opts, self.nthreads, fn_input_to_msa, fn_msa_orig, fn_msa_new), 
                 shell=True)
         if n_seqs_orig_123many >= 3:
-            fn_tree_new = self.run_tree_inference(og_part, n_seqs_orig_123many, fn_msa_new, q_subtree)
+            fn_tree_new = self.run_tree_inference(og_part, n_seqs_orig_123many, fn_msa_new, q_subtree, query_names)
         else:
             if not q_subtree:
                 self.write_trivial_tree(genes, fn_final_tree)
                 # warn_string = "Tree could not be rooted"
-                return fn_final_tree, query_name, warn_string
+                return fn_final_tree, query_names, warn_string
 
         # Rooting
         if not q_subtree:
@@ -90,12 +98,12 @@ class MSAGrafter(object):
             nwk_str = self.reconstruct_super_tree(og_part, t_sup, nwk_sub)
         
         if tree_method == "iqtree":
-            query_name = self.iqtree_names_adjust([query_name, ])[0]
+            query_names = self.iqtree_names_adjust(query_names)
             # with EPA we get a correct support value
-            nwk_str = self.remove_support_for_gene_placement(nwk_str, query_name)
+            nwk_str = self.remove_support_for_gene_placement(nwk_str, query_names)
         with open(fn_final_tree, 'w') as outfile:
             outfile.write(nwk_str)
-        return fn_final_tree, query_name, warn_string
+        return fn_final_tree, query_names, warn_string
 
     def root_independent_tree(self, og_part, fn_tree_new, n_seqs_123many, iq_name_adjust):
         """
@@ -207,7 +215,7 @@ class MSAGrafter(object):
 
 
     @staticmethod
-    def remove_support_for_gene_placement(nwk_str, gene_name):
+    def remove_support_for_gene_placement(nwk_str, gene_names):
         """
         No bootstrap analysis has been done on placement of query gene so remove 
         the support value incorrectly written by ete3 for its placement
@@ -218,29 +226,31 @@ class MSAGrafter(object):
             Traverse from query gene until finding its closing bracket. If extra
             opening brackets are found during the traverse then theymust be closed first
         """
-        n = len(nwk_str)
-        i = nwk_str.find(gene_name)
-        if i == -1:
-            # Error, gene should be in tree
-            return nwk_str
-        i += len(gene_name)
-        if i>=n:
-            # Error, gene name should be followed by more of the newick string
-            return nwk_str
-        exp_braces = 1
-        while i<n:
-            if nwk_str[i] == ")":
-                exp_braces -= 1
-            elif nwk_str[i] == "(":
-                exp_braces += 1
-            i+=1
-            if exp_braces == 0:
-                # found the location of the support value
-                break
-        i_rm0 = i
-        while nwk_str[i].isdigit() or nwk_str[i] == ".":
-            i+=1
-        nwk_str = nwk_str[:i_rm0] + nwk_str[i:]
+        for gene_name in gene_names:
+            n = len(nwk_str)
+            i = nwk_str.find(gene_name)
+            if i == -1:
+                # Error, gene should be in tree
+                continue
+            i += len(gene_name)
+            if i>=n:
+                # Error, gene name should be followed by more of the newick string
+                continue
+            exp_braces = 1
+            while i<n:
+                if nwk_str[i] == ")":
+                    exp_braces -= 1
+                elif nwk_str[i] == "(":
+                    exp_braces += 1
+                i+=1
+                if exp_braces == 0:
+                    # found the location of the support value
+                    break
+            i_rm0 = i
+            while nwk_str[i].isdigit() or nwk_str[i] == ".":
+                i+=1
+            nwk_str = nwk_str[:i_rm0] + nwk_str[i:]
+
         return nwk_str
 
 
@@ -287,11 +297,11 @@ class MSAGrafter(object):
         return nwk
 
 
-    def run_tree_inference(self, og_part, n_seqs_123many, fn_msa, q_subtree):
-        return self.run_iqtree(og_part, n_seqs_123many, fn_msa, q_subtree)
+    def run_tree_inference(self, og_part, n_seqs_123many, fn_msa, q_subtree, query_names):
+        return self.run_iqtree(og_part, n_seqs_123many, fn_msa, q_subtree, query_names)
 
 
-    def run_iqtree(self, og_part, n_seqs_123many, fn_msa, q_subtree):
+    def run_iqtree(self, og_part, n_seqs_123many, fn_msa, q_subtree, query_names):
         """
         Run IQTREE
         Args:
@@ -299,6 +309,7 @@ class MSAGrafter(object):
             n_seqs_123many - Lower bound on number of seqs in original tree, one of {1,2,3,4}
             fn_msa - the MSA
             q_subtree - is the gene assigned to a subtree
+            query_names - list of query genes
         Implementation:
         - >=4 genes: unroot the starting tree & run iqtree
         - 3 genes: run iqtree from scratch
@@ -359,14 +370,16 @@ class MSAGrafter(object):
 
 
     @staticmethod
-    def rename_gene(infn, new_query_name):
+    def rename_genes(infn, new_query_names):
         fn_new = infn + ".rn.fa"
-        with open(infn, 'r') as infile, open(fn_new, 'w') as outfile:
-            for l in infile:
-                if l.startswith(">"):
-                    outfile.write(">%s\n" % new_query_name)
-                else:
-                    outfile.write(l)
+        infile = open(infn, 'r')
+        fasta = infile.read()
+        infile.close()
+        outfile = open(fn_new, 'w')
+        for query_name, new_query_name in new_query_names:
+            fasta = re.sub('>' + re.escape(query_name) + '(?=\s)', '>' + new_query_name, fasta)
+        outfile.write(fasta)
+        outfile.close()
         return fn_new
 
 

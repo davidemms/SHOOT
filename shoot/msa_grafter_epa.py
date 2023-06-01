@@ -20,7 +20,7 @@ class MSAGrafter_EPA(msa_grafter.MSAGrafter):
         super(MSAGrafter_EPA, self).__init__(*args, **kwargs)
         self.re_disallowed_seq_chars = re.compile("[^-ABCDEFGHIKLMNPQRSTVWYZ\n]")
 
-    def run_tree_inference(self, og_part, n_seqs_123many, fn_msa, q_subtree):
+    def run_tree_inference(self, og_part, n_seqs_123many, fn_msa, q_subtree, query_names):
         """
         Run EPA
         Args:
@@ -28,6 +28,7 @@ class MSAGrafter_EPA(msa_grafter.MSAGrafter):
             n_seqs_123many - Lower bound on number of seqs in original tree, one of {1,2,3,4}
             fn_msa - the MSA
             q_subtree - is the gene assigned to a subtree
+            query_names - list of query genes
         Implementation:
         - >=4 genes: unroot the starting tree & run iqtree
         - 3 genes: run iqtree from scratch
@@ -48,7 +49,7 @@ class MSAGrafter_EPA(msa_grafter.MSAGrafter):
             #     fn_unrooted = fn_tree_orig + ".un.tre"
             #     t.write(outfile=fn_unrooted)
             # Split the MSA into reference and query files
-            fn_ref, fn_query = self.split_reference_query(fn_msa)
+            fn_ref, fn_query = self.split_reference_query(fn_msa, query_names)
             # Run EPA
             out_dir = fn_msa + "_epa/"
             if not os.path.exists(out_dir):
@@ -116,7 +117,7 @@ class MSAGrafter_EPA(msa_grafter.MSAGrafter):
             subprocess.call(["gappa", "examine", "graft", "--jplace-path", jplace_fn, "--out-dir", d, "--file-prefix", fn + ".", "--allow-file-overwriting", "--threads", "1"],stdout=FNULL, stderr=FNULL)
         return jplace_fn + ".epa_result.newick"
 
-    def split_reference_query(self, fn_msa):
+    def split_reference_query(self, fn_msa, query_names):
         """
         Split an MSA into separate files for the reference & query sequences, as 
         required by EPA
@@ -128,14 +129,15 @@ class MSAGrafter_EPA(msa_grafter.MSAGrafter):
         """
         fn_ref = fn_msa + ".ref.fa"
         fn_query = fn_msa + ".query.fa"
-        lines = ""
-        with open(fn_msa, 'r') as infile, open(fn_ref, 'w') as out_ref, open(fn_query, 'w') as out_query:
-            for l in infile:
-                if l.startswith(">"):
-                    out_ref.write(lines)
-                    lines = ""
+        infile = open(fn_msa, 'r')
+        fasta_data = infile.read()
+        genes = dict(re.findall(r"^>([^\n]+)\n([^>]+)", fasta_data, re.MULTILINE))
+        infile.close()
+        with open(fn_ref, 'w') as out_ref, open(fn_query, 'w') as out_query:
+            for gene, seq in genes.items():
+                if gene in query_names:
+                    out_query.write('>' + gene + '\n' + seq + '\n')
                 else:
-                    l = re.sub(self.re_disallowed_seq_chars, '-', l)
-                lines += l
-            out_query.write(lines)
+                    out_ref.write('>' + gene + '\n' + seq + '\n')
+
         return fn_ref, fn_query
