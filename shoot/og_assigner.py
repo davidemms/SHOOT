@@ -73,18 +73,18 @@ class OGAssignDIAMOND(OGAssigner):
             # Generate a new FASTA with the gene to reassign
             new_fasta_data = ''
             for gene in reassign:
-                new_fasta_data = new_fasta_data + '>' + gene + genes[gene] + '\n'
+                new_fasta_data = new_fasta_data + '>' + gene + '\n' + genes[gene] + '\n'
 
-            sensfile_name = infn + '.sens.fa'
-            with open(sensfile_name, 'w') as sensfile:
+            rematch_file_name = infn + '.rematch.fa'
+            with open(rematch_file_name, 'w') as sensfile:
                 sensfile.write(new_fasta_data)
 
             # Try again with a more sensitive search & all sequences
-            fn_results = self.run_diamond(sensfile_name, fn_base, q_ultra_sens=True, q_all_seqs=True)
-            assignations = self.og_from_diamond_results(fn_results)
+            fn_results = self.run_diamond(rematch_file_name, fn_base, q_ultra_sens=True, q_all_seqs=True, name_extra='.all')
+            assignations.update(self.og_from_diamond_results(fn_results))
         return assignations
     
-    def run_diamond(self, fn_query, fn_out_base, q_ultra_sens=False, q_all_seqs=False):
+    def run_diamond(self, fn_query, fn_out_base, q_ultra_sens=False, q_all_seqs=False, name_extra=''):
         """
         Run DIAMOND against database of orthogroup profiles
         Args:
@@ -94,8 +94,8 @@ class OGAssignDIAMOND(OGAssigner):
             fn_og_results_out - DIAMOND results filename
         """
         fn_db = self.d_db + (self.all_seqs_db_name if q_all_seqs else self.profiles_db_name) 
-        fn_og_results_out = fn_out_base + ".sh.ogs.txt"
-        with open(fn_og_results_out + '.log', 'w') as log:
+        fn_og_results_out = fn_out_base + ".sh.ogs" + (name_extra or '') + ".txt"
+        with open(fn_og_results_out + '.log', 'a') as log:
             cmd_list = ["diamond", "blastp", "-d", fn_db, "-q", fn_query, "-o", fn_og_results_out, "--quiet", "-e", "0.001", "--compress", "1", "-p", str(self.nthreads)]
             if q_ultra_sens:
                 cmd_list += ["--ultra-sensitive"]
